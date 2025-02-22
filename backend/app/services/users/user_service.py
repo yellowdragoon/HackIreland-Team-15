@@ -8,9 +8,20 @@ class UserService:
     collection_name = 'users'
 
     @classmethod
+    async def check_if_record_exists(cls, passport_string: str) -> bool:
+        try:
+            user = await MongoDB.db[cls.collection_name].find_one({'passport_string': passport_string})
+            return user is not None
+        except Exception as e:
+            Logger.error(f'Error checking if user exists: {str(e)}')
+            return False
+
+    @classmethod
     async def create_user(cls, user: User):
         try:
             user_dict = user.model_dump()
+            if await cls.check_if_record_exists(user.passport_string):
+                return await cls.get_user(user.passport_string)
             result = await MongoDB.db[cls.collection_name].insert_one(user_dict)
             created_user = await MongoDB.db[cls.collection_name].find_one(
                 {'_id': result.inserted_id}
@@ -18,6 +29,7 @@ class UserService:
             created_user['_id'] = str(created_user['_id'])
             return created_user
         except Exception as e:
+            Logger.error(f'Error creating user: {str(e)}')
             return None
 
     @classmethod
