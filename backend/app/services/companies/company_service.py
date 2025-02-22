@@ -8,11 +8,22 @@ class CompanyService:
     collection_name = "companies"
 
     @classmethod
-    async def create_company(self, company: Company):
+    async def check_if_record_exists(cls, company_id: str) -> bool:
+        try:
+            company = await MongoDB.db[cls.collection_name].find_one({'_id': ObjectId(company_id)})
+            return company is not None
+        except Exception as e:
+            Logger.error(f'Error checking if company exists: {str(e)}')
+            return False
+
+    @classmethod
+    async def create_company(cls, company: Company):
         try:
             company_dict = company.model_dump()
-            result = await MongoDB.db[self.collection_name].insert_one(company_dict)
-            created_company = await MongoDB.db[self.collection_name].find_one(
+            if await cls.check_if_record_exists(company.id):
+                return await cls.get_company(company.id)
+            result = await MongoDB.db[cls.collection_name].insert_one(company_dict)
+            created_company = await MongoDB.db[cls.collection_name].find_one(
                 {'_id': result.inserted_id}
             )
             created_company['_id'] = str(created_company['_id'])
