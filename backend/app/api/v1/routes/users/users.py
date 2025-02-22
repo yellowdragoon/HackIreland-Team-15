@@ -27,11 +27,18 @@ async def get_user(passport_string: str, request: Request):
 
 @router.get("/{passport_string}/risk")
 async def get_user_risk(passport_string: str, request: Request):
-    ip_address = request.client.host
-    result = await UserService.get_user_with_risk_score(passport_string, ip_address)
-    if not result:
-        raise HTTPException(status_code=404, detail="User not found")
-    return result
+    try:
+        ip_address = request.client.host
+        result = await UserService.get_user_with_risk_score(passport_string, ip_address)
+        if not result:
+            raise HTTPException(status_code=404, detail="User not found")
+        return {
+            "user": result["user"],
+            "risk_score": result["risk_score"],
+            "devices": result["devices"]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/")
 async def list_users():

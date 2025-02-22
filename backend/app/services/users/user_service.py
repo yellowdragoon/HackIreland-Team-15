@@ -19,20 +19,26 @@ class UserService:
             return False
 
     @classmethod
-    async def create_user(cls, user: User, ip_address: str):
+    async def create_user(cls, user: User, ip_address: str) -> Optional[User]:
         try:
-            user_dict = user.model_dump()
             existing_user = await cls.get_user(user.passport_string)
             if existing_user:
                 await UserInfoService.add_device(str(existing_user.id), ip_address)
                 return existing_user
+
+            user_dict = user.model_dump(exclude={'id'})
             result = await MongoDB.db[cls.collection_name].insert_one(user_dict)
-            created_user = await MongoDB.db[cls.collection_name].find_one(
+            
+            created_user_dict = await MongoDB.db[cls.collection_name].find_one(
                 {'_id': result.inserted_id}
             )
-            created_user['_id'] = str(created_user['_id'])
-            await UserInfoService.add_device(str(result.inserted_id), ip_address)
+            if not created_user_dict:
+                return None
 
+            created_user_dict['_id'] = str(created_user_dict['_id'])
+            created_user = User.model_validate(created_user_dict)
+            
+            await UserInfoService.add_device(str(created_user.id), ip_address)
             return created_user
         except Exception as e:
             Logger.error(f'Error creating user: {str(e)}')
@@ -98,9 +104,12 @@ class UserService:
     @classmethod
     async def get_user_with_risk_score(cls, passport_string: str, ip_address: Optional[str] = None) -> Optional[dict]:
         try:
-            user = await cls.get_user(passport_string)
-            if not user:
+            user_data = await MongoDB.db[cls.collection_name].find_one({'passport_string': passport_string})
+            if not user_data:
                 return None
+
+            user_data['_id'] = str(user_data['_id'])
+            user = User.model_validate(user_data)
 
             if ip_address:
                 await UserInfoService.add_device(str(user.id), ip_address)
@@ -109,7 +118,7 @@ class UserService:
             devices = await UserInfoService.get_user_devices(str(user.id))
 
             return {
-                "user": user,
+                "user": user.model_dump(),
                 "risk_score": risk_score,
                 "devices": devices
             }
