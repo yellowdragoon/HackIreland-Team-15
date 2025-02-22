@@ -5,3 +5,5 @@ from .companies import router as companies_router
 router = APIRouter()
 router.include_router(users_router)
 router.include_router(companies_router)
+
+
