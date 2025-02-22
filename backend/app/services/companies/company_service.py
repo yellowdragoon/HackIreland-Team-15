@@ -1,6 +1,6 @@
 from app.models.company.company import Company
 from app.utils.logger.logger import Logger
-from app.db.db import MongoDB
+from app.core.db.db import MongoDB
 from typing import Optional
 from bson import ObjectId
 
