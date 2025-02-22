@@ -4,34 +4,25 @@ import re
 
 class UserValidator:
     @staticmethod
-    def validate_user_data(data: Dict[str, Any]) -> Dict[str, str]:
+    def validate_user_data(data: Dict[str, Any], partial: bool = False) -> Dict[str, str]:
         Logger.info(f'Validating user data: {data}')
         errors = {}
         
-        # Validate email
-        email = data.get('email')
-        if not email:
-            Logger.warning('Email validation failed: Email is required')
-            errors['email'] = 'Email is required'
-        elif not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
-            Logger.warning(f'Email validation failed: Invalid format - {email}')
-            errors['email'] = 'Invalid email format'
-
-        # Validate password
-        password = data.get('password')
-        if not password:
-            Logger.warning('Password validation failed: Password is required')
-            errors['password'] = 'Password is required'
-        elif len(password) < 6:
-            Logger.warning('Password validation failed: Too short')
-            errors['password'] = 'Password must be at least 6 characters'
+        # Validate passport_string
+        passport_string = data.get('passport_string')
+        if not partial and not passport_string:
+            Logger.warning('Validation failed: Passport string is required')
+            errors['passport_string'] = 'Passport string is required'
+        elif passport_string and len(passport_string) < 5:
+            Logger.warning(f'Validation failed: Passport string too short - {passport_string}')
+            errors['passport_string'] = 'Passport string must be at least 5 characters'
 
         # Validate name
         name = data.get('name')
-        if not name:
+        if not partial and not name:
             Logger.warning('Name validation failed: Name is required')
             errors['name'] = 'Name is required'
-        elif len(name) < 2:
+        elif name and len(name) < 2:
             Logger.warning(f'Name validation failed: Too short - {name}')
             errors['name'] = 'Name must be at least 2 characters'
 
@@ -49,4 +40,6 @@ class UserValidator:
             Logger.warning(f'Validation failed with errors: {errors}')
         else:
             Logger.info('Validation successful')
+            
+        return errors
         return errors
