@@ -10,7 +10,7 @@ prod: clean
 	@echo "🏗️  Building Docker container..."
 	docker build -t hackireland-app .
 	@echo "🚀 Starting application..."
-	docker run -d -p 8080:8080 hackireland-app
+	docker run -d -p 8080:8080 --add-host=host.docker.internal:host-gateway hackireland-app
 	@echo "🌐 Starting ngrok tunnel..."
 	@(pkill ngrok || true) && ngrok http 8080
 

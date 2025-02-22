@@ -21,25 +21,17 @@ class Logger:
 
         cls._logger = logging.getLogger('app')
         cls._logger.setLevel(logging.INFO)
-
-        # Create logs directory if it doesn't exist
         log_dir = 'logs'
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
-
-        # File handler with rotation
         file_handler = RotatingFileHandler(
             os.path.join(log_dir, f'app_{datetime.now().strftime("%Y%m%d")}.log'),
             maxBytes=10485760,  # 10MB
             backupCount=5
         )
         file_handler.setLevel(logging.INFO)
-
-        # Console handler
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setLevel(logging.INFO)
-
-        # Formatter
         formatter = logging.Formatter(
             '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
         )

@@ -4,17 +4,16 @@ from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.routes.users.users import router as user_router
 from app.utils.logger.logger import Logger
-from mongoengine import connect
+from app.db.db import MongoDB, get_db
 import os
 
 load_dotenv()
-mongodb_url = os.getenv('MONGODB_URL', 'mongodb://localhost:27017/app_db')
-connect(host=mongodb_url)
 
 app = FastAPI(
     title="HackIreland API",
     description="API for HackIreland Team 15 project",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=get_db
 )
 
 app.add_middleware(

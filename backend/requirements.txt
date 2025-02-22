@@ -15,11 +15,12 @@ Jinja2==3.1.5
 markdown-it-py==3.0.0
 MarkupSafe==3.0.2
 mdurl==0.1.2
-motor==3.7.0
+mongoengine==0.27.0
+motor==3.3.1
 pydantic==2.10.6
 pydantic_core==2.27.2
 Pygments==2.19.1
-pymongo==4.11.1
+pymongo==4.5.0
 python-dotenv==1.0.1
 python-multipart==0.0.20
 PyYAML==6.0.2

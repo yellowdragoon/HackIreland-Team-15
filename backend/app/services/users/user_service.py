@@ -1,91 +1,71 @@
 from app.models.user.user import User
-from app.validators.users.user_validator import UserValidator
 from app.utils.logger.logger import Logger
-from typing import Optional, Dict, Any, Tuple, List
+from app.db.db import MongoDB
+from typing import Optional, List
+from bson import ObjectId
 
 class UserService:
-    @staticmethod
-    def create_user(passport_string: str, name: str, ref_score: int = 0) -> Tuple[Optional[User], Dict[str, str]]:
-        Logger.info(f'Attempting to create user with passport: {passport_string}')
-        
-        errors = UserValidator.validate_user_data({
-            'passport_string': passport_string,
-            'name': name,
-            'ref_score': ref_score
-        })
+    collection_name = 'users'
 
-        if errors:
-            Logger.warning(f'Validation failed for user creation: {errors}')
-            return None, errors
-
-        if User.objects(passport_string=passport_string).first():
-            Logger.warning(f'User creation failed: Passport already exists - {passport_string}')
-            return None, {'passport_string': 'Passport already exists'}
-
+    @classmethod
+    async def create_user(cls, user: User):
         try:
-            user = User(
-                passport_string=passport_string,
-                name=name,
-                ref_score=ref_score
+            user_dict = user.model_dump()
+            result = await MongoDB.db[cls.collection_name].insert_one(user_dict)
+            created_user = await MongoDB.db[cls.collection_name].find_one(
+                {'_id': result.inserted_id}
             )
-            saved_user = user.save()
-            Logger.info(f'Successfully created user with passport: {passport_string}')
-            return saved_user, {}
+            created_user['_id'] = str(created_user['_id'])
+            return created_user
         except Exception as e:
-            Logger.error(f'Error creating user {passport_string}: {str(e)}')
-            return None, {'error': str(e)}
+            return None
 
-    @staticmethod
-    def get_user(passport_string: str) -> Optional[User]:
-        Logger.info(f'Fetching user with passport: {passport_string}')
-        user = User.objects(passport_string=passport_string).first()
-        if not user:
-            Logger.warning(f'User not found: {passport_string}')
-        return user
-
-    @staticmethod
-    def list_users() -> List[User]:
-        Logger.info('Fetching all users')
-        return list(User.objects.all())
-
-    @staticmethod
-    def update_user(passport_string: str, **update_data) -> Tuple[Optional[User], Dict[str, str]]:
-        Logger.info(f'Attempting to update user: {passport_string}')
-        
-        user = User.objects(passport_string=passport_string).first()
-        if not user:
-            Logger.warning(f'Update failed: User not found - {passport_string}')
-            return None, {'error': 'User not found'}
-
-        # Validate update data
-        errors = UserValidator.validate_user_data(update_data, partial=True)
-        if errors:
-            Logger.warning(f'Update validation failed: {errors}')
-            return None, errors
-
+    @classmethod
+    async def get_user(cls, passport_string: str) -> Optional[User]:
         try:
-            for key, value in update_data.items():
-                setattr(user, key, value)
-            user.save()
-            Logger.info(f'Successfully updated user: {passport_string}')
-            return user, {}
+            user_data = await MongoDB.db[cls.collection_name].find_one({'passport_string': passport_string})
+            if user_data:
+                return User.model_validate(user_data)
+            return None
         except Exception as e:
-            Logger.error(f'Error updating user {passport_string}: {str(e)}')
-            return None, {'error': str(e)}
+            Logger.error(f'Error getting user: {str(e)}')
+            return None
 
-    @staticmethod
-    def delete_user(passport_string: str) -> Tuple[bool, Dict[str, str]]:
-        Logger.info(f'Attempting to delete user: {passport_string}')
-        
-        user = User.objects(passport_string=passport_string).first()
-        if not user:
-            Logger.warning(f'Delete failed: User not found - {passport_string}')
-            return False, {'error': 'User not found'}
-
+    @classmethod
+    async def list_users(cls) -> List[User]:
         try:
-            user.delete()
-            Logger.info(f'Successfully deleted user: {passport_string}')
-            return True, {}
+            cursor = MongoDB.db[cls.collection_name].find()
+            users = []
+            async for user in cursor:
+                users.append(User.model_validate(user))
+            return users
         except Exception as e:
-            Logger.error(f'Error deleting user {passport_string}: {str(e)}')
-            return False, {'error': str(e)}
+            Logger.error(f'Error listing users: {str(e)}')
+            return []
+
+    @classmethod
+    async def update_user(cls, passport_string: str, user: User) -> Optional[User]:
+        try:
+            # Don't update passport_string
+            update_data = user.model_dump(by_alias=True, exclude={'_id', 'passport_string'})
+            result = await MongoDB.db[cls.collection_name].update_one(
+                {'passport_string': passport_string},
+                {'$set': update_data}
+            )
+            if result.modified_count == 0:
+                return None
+            return await cls.get_user(passport_string)
+        except Exception as e:
+            Logger.error(f'Error updating user: {str(e)}')
+            return None
+
+    @classmethod
+    async def delete_user(cls, passport_string: str) -> bool:
+        try:
+            result = await MongoDB.db[cls.collection_name].delete_one({'passport_string': passport_string})
+            return result.deleted_count > 0
+        except Exception as e:
+            Logger.error(f'Error deleting user: {str(e)}')
+            return False
+
+

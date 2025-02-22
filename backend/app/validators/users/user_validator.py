@@ -1,14 +1,11 @@
 from typing import Dict, Any
 from app.utils.logger.logger import Logger
-import re
 
 class UserValidator:
     @staticmethod
     def validate_user_data(data: Dict[str, Any], partial: bool = False) -> Dict[str, str]:
         Logger.info(f'Validating user data: {data}')
         errors = {}
-        
-        # Validate passport_string
         passport_string = data.get('passport_string')
         if not partial and not passport_string:
             Logger.warning('Validation failed: Passport string is required')
@@ -16,8 +13,6 @@ class UserValidator:
         elif passport_string and len(passport_string) < 5:
             Logger.warning(f'Validation failed: Passport string too short - {passport_string}')
             errors['passport_string'] = 'Passport string must be at least 5 characters'
-
-        # Validate name
         name = data.get('name')
         if not partial and not name:
             Logger.warning('Name validation failed: Name is required')
@@ -25,8 +20,6 @@ class UserValidator:
         elif name and len(name) < 2:
             Logger.warning(f'Name validation failed: Too short - {name}')
             errors['name'] = 'Name must be at least 2 characters'
-
-        # Validate ref_score
         ref_score = data.get('ref_score')
         if ref_score is not None:
             if not isinstance(ref_score, int):
@@ -40,6 +33,5 @@ class UserValidator:
             Logger.warning(f'Validation failed with errors: {errors}')
         else:
             Logger.info('Validation successful')
-            
-        return errors
+
         return errors

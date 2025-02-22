@@ -1,11 +1,6 @@
-from mongoengine import *
-from app.models.base_model import BaseDocument
+from pydantic import BaseModel
 
-class User(BaseDocument):
-    passport_string = StringField(required=True, unique=True)
-    name = StringField(required=True)
-    ref_score = IntField(default=0, min_value=0, max_value=100)
-
-    meta = {
-        'collection': 'users'
-    }
+class User(BaseModel):
+    name: str
+    passport_string: str
+    ref_score: int = 0

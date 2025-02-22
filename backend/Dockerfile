@@ -6,11 +6,8 @@ WORKDIR /src
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
-# Copy the app directory and .env file
+# Copy the app directory
 COPY ./app ./app
-COPY ../.env .
-
-# Set environment variables
-ENV PORT=8080
+COPY .env .
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
