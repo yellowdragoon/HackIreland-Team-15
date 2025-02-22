@@ -1,0 +1,21 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - MONGODB_URL=mongodb+srv://henrysalkever:teamfifteen@teamfifteen.pnqj6.mongodb.net/?retryWrites=true&w=majority&appName=TeamFifteen
+      - PORT=8080
+    volumes:
+      - .:/app
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    platform: linux/arm64
+    ports:
+      - "4040:4040"
+    environment:
+      - NGROK_AUTHTOKEN=2sdnBmAXn9aQ4TQeSWMweD4mt9z_6pbfCeAA3VsrY7cyjXdTr
+    command: http web:8080
+    depends_on:
+      - web
