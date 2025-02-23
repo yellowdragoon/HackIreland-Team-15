@@ -51,6 +51,19 @@ class CompanyBreachService:
             return None
 
     @classmethod
+    async def get_breach_type(cls, breach_type: str) -> Optional[CompanyBreachType]:
+        try:
+            # Convert to lowercase and try to find the enum
+            breach_type_lower = breach_type.lower()
+            for enum_member in BreachTypeEnum:
+                if enum_member.value == breach_type_lower:
+                    return CompanyBreachType(name=enum_member, effect=5)
+            return None
+        except Exception as e:
+            Logger.error(f'Error getting breach type: {str(e)}')
+            return None
+
+    @classmethod
     async def update_breach(cls, company_id: str, breach: CompanyBreachType):
         try:
             breach_dict = breach.model_dump(exclude={'id'})

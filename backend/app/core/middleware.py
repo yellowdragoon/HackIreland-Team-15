@@ -26,17 +26,7 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
                 )
 
             if response.status_code >= 400:
-                return JSONResponse(
-                    status_code=response.status_code,
-                    content={
-                        "error": response.status_code,
-                        "message": str(response.body),
-                        "path": request.url.path,
-                        "method": request.method,
-                        "timestamp": time.time(),
-                        "process_time": f"{(time.time() - start_time):.4f} seconds"
-                    }
-                )
+                return response
 
             return response
 
