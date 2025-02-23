@@ -9,7 +9,7 @@ from app.models.company.breach_type.breach_type import BreachTypeEnum
 
 class BreachEventService:
     collection_name = "breach_events"
-
+    
     @classmethod
     async def create_breach_event(cls, event: BreachEvent) -> Optional[Dict[str, Any]]:
         try:
@@ -70,12 +70,9 @@ class BreachEventService:
     @classmethod
     async def update_breach_event(cls, event_id: str, event: BreachEvent) -> Optional[Dict[str, Any]]:
         try:
-            # Check if event exists
             existing_event = await cls.get_breach_event(event_id)
             if not existing_event:
                 return None
-
-            # Update event
             event_dict = event.model_dump(exclude={'id'})
             result = await MongoDB.db[cls.collection_name].update_one(
                 {'_id': ObjectId(event_id)},
