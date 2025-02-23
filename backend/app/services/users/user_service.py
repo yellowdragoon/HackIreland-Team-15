@@ -3,6 +3,8 @@ from app.utils.logger.logger import Logger
 from app.core.db.db import MongoDB
 from app.services.users.info.ipcheck import IPCheckResult
 from app.services.users.info.user_info import UserInfoService
+from app.services.users.breach_event_service import BreachEventsService
+from app.services.users.scoring.scoring import calculate_risk_score
 from typing import Optional, List
 from bson import ObjectId
 
@@ -140,3 +142,17 @@ class UserService:
         except Exception as e:
             Logger.error(f'Error getting user with risk score: {str(e)}')
             return None
+        
+    @classmethod 
+    async def set_user_risk_score(cls,user_id: str):
+        user = await cls.get_user_by_id(user_id)
+        if not user: 
+            return None 
+        
+        breach_events = await BreachEventsService.get_breach_events_for_user(user_id)
+        num_devices = await UserInfoService.get_user_devices(user_id)
+        new_score = calculate_risk_score(user_id,breach_events,num_devices)
+        user.risk_score = new_score 
+        await user.save()
+
+        return new_score 

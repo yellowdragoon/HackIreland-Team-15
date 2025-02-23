@@ -20,6 +20,7 @@ wheels/
 *.egg
 .DS_Store
 
+myenv/
 venv/
 env/
 ENV/
