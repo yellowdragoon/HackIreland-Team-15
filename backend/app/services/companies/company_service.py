@@ -73,16 +73,31 @@ class CompanyService:
             Logger.error(f'Error deleting company: {str(e)}')
             return False
 
-    async def update_company(self, company: Company):
+    @classmethod
+    async def update_company(cls, company: Company):
         try:
-            company_dict = company.model_dump(by_alias=True, exclude={'_id'})
-            result = await MongoDB.db[self.collection_name].update_one(
-                {'_id': ObjectId(company.id)},
+            company_dict = company.model_dump(exclude={'_id'})
+            result = await MongoDB.db[cls.collection_name].update_one(
+                {'id': company.id},
                 {'$set': company_dict}
             )
-            return result.modified_count > 0
+            if result.modified_count > 0:
+                return await cls.get_company(company.id)
+            return None
         except Exception as e:
             Logger.error(f'Error updating company: {str(e)}')
-            return False
+            return None
 
-
+    @classmethod
+    async def list_companies(cls):
+        try:
+            companies = []
+            cursor = MongoDB.db[cls.collection_name].find()
+            async for company in cursor:
+                if '_id' in company:
+                    company['_id'] = str(company['_id'])
+                companies.append(Company.model_validate(company))
+            return companies
+        except Exception as e:
+            Logger.error(f'Error listing companies: {str(e)}')
+            return []

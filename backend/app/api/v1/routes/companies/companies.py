@@ -28,10 +28,21 @@ async def get_company(company_id: str):
 @router.put("/{company_id}")
 async def update_company(company_id: str, company: Company):
     try:
-        updated_company = await CompanyService.update_company(company_id, company)
+        # Check if company exists
+        existing_company = await CompanyService.get_company(company_id)
+        if not existing_company:
+            raise HTTPException(status_code=404, detail=f"Company {company_id} not found")
+
+        # Update company ID to match path parameter
+        company.id = company_id
+        updated_company = await CompanyService.update_company(company)
+        if not updated_company:
+            raise HTTPException(status_code=500, detail="Failed to update company")
         return updated_company
+    except HTTPException as e:
+        raise e
     except Exception as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/{company_id}")
 async def delete_company(company_id: str):

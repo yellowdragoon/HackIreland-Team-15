@@ -57,6 +57,12 @@ async def update_user(passport_string: str, user: User, request: Request):
 
 @router.delete("/{passport_string}")
 async def delete_user(passport_string: str):
-    if not await UserService.delete_user(passport_string):
-        raise HTTPException(status_code=404, detail="User not found")
-    return {"message": "User deleted successfully"}
+    try:
+        success = await UserService.delete_user(passport_string)
+        if not success:
+            raise HTTPException(status_code=404, detail="User not found")
+        return {"status": "success", "message": "User deleted successfully"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

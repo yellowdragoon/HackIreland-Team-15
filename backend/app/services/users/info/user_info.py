@@ -66,3 +66,12 @@ class UserInfoService:
         except Exception as e:
             Logger.error(f"Error calculating risk: {str(e)}")
             return 0
+
+    @classmethod
+    async def delete_user_devices(cls, user_id: str) -> bool:
+        try:
+            result = await MongoDB.db[cls.collection_name].delete_many({'user_id': user_id})
+            return result.deleted_count > 0
+        except Exception as e:
+            Logger.error(f"Error deleting user devices: {str(e)}")
+            return False

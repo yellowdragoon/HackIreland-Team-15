@@ -83,17 +83,74 @@ async def get_user_breach_events(user_id: str):
         Logger.error(f"Error getting user breach events: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/company/{company_id}")
-async def get_company_breach_events(company_id: str) -> List[BreachEvent]:
-    return await BreachEventService.get_company_breach_events(company_id)
+@router.get("/company/{company_id}",
+         response_model=dict,
+         summary="Get all breach events for a company",
+         description="Retrieve all breach events associated with a specific company.")
+async def get_company_breach_events(company_id: str):
+    try:
+        events = await BreachEventService.get_company_breach_events(company_id)
+        if not events:
+            return {"status": "success", "data": []}
+        return {"status": "success", "data": events}
+    except Exception as e:
+        Logger.error(f"Error getting company breach events: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/{event_id}/resolve")
+@router.put("/{event_id}",
+         response_model=dict,
+         summary="Update a breach event",
+         description="Update an existing breach event with new information.")
+async def update_breach_event(event_id: str, event: BreachEvent):
+    try:
+        updated_event = await BreachEventService.update_breach_event(event_id, event)
+        if not updated_event:
+            raise HTTPException(status_code=404, detail="Breach event not found")
+        return {"status": "success", "data": updated_event}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        Logger.error(f"Error updating breach event: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/{event_id}",
+            response_model=dict,
+            summary="Delete a breach event",
+            description="Delete an existing breach event.")
+async def delete_breach_event(event_id: str):
+    try:
+        success = await BreachEventService.delete_breach_event(event_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Breach event not found")
+        return {"status": "success", "message": "Breach event deleted successfully"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        Logger.error(f"Error deleting breach event: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/{event_id}/resolve",
+           response_model=dict,
+           summary="Resolve a breach event",
+           description="Mark a breach event as resolved with resolution notes.")
 async def resolve_breach_event(event_id: str, resolution_notes: str):
-    event = await BreachEventService.resolve_breach_event(event_id, resolution_notes)
-    if not event:
-        raise HTTPException(status_code=404, detail="Breach event not found")
-    return event
+    try:
+        event = await BreachEventService.resolve_breach_event(event_id, resolution_notes)
+        if not event:
+            raise HTTPException(status_code=404, detail="Breach event not found")
+        return {"status": "success", "data": event}
+    except Exception as e:
+        Logger.error(f"Error resolving breach event: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/unresolved")
-async def get_unresolved_events() -> List[BreachEvent]:
-    return await BreachEventService.get_unresolved_events()
+@router.get("/unresolved",
+         response_model=dict,
+         summary="Get all unresolved breach events",
+         description="Retrieve all breach events that have not been resolved.")
+async def get_unresolved_events():
+    try:
+        events = await BreachEventService.get_unresolved_events()
+        return {"status": "success", "data": events}
+    except Exception as e:
+        Logger.error(f"Error getting unresolved events: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))

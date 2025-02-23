@@ -9,9 +9,11 @@ class SeverityEnum(str, Enum):
     LOW = "LOW"
     MEDIUM = "MEDIUM"
     HIGH = "HIGH"
+    CRITICAL = "CRITICAL"
 
 class StatusEnum(str, Enum):
     OPEN = "OPEN"
+    IN_PROGRESS = "IN_PROGRESS"
     CLOSED = "CLOSED"
 
 class BreachEvent(BaseModel):

@@ -152,7 +152,7 @@ run_tests() {
 
     # Test 14: Create Breach Event
     echo -e "\n${BLUE}Testing Breach Events Endpoints:${NC}"
-    CREATE_EVENT_RESPONSE=$(curl -s -w "%{http_code}" -X POST "$BASE_URL/breach-events/" \
+    CREATE_EVENT_RESPONSE=$(curl -s -X POST "$BASE_URL/breach-events/" \
         -H "Content-Type: application/json" \
         -d '{
             "user_id": "TEST123",
@@ -163,8 +163,9 @@ run_tests() {
             "status": "OPEN",
             "timestamp": "2025-02-23T00:54:48Z"
         }')
-    RESPONSE_STATUS=${CREATE_EVENT_RESPONSE: -3}
-    print_result "/breach-events/ (Create)" "POST" $RESPONSE_STATUS 200
+    EVENT_ID=$(echo "$CREATE_EVENT_RESPONSE" | jq -r '.data._id')
+    CREATE_STATUS=$(curl -s -w "%{http_code}" -o /dev/null -X GET "$BASE_URL/breach-events/$EVENT_ID")
+    print_result "/breach-events/ (Create)" "POST" $CREATE_STATUS 200
 
     # Test 15: Get User Breach Events
     GET_EVENTS_RESPONSE=$(curl -s -w "%{http_code}" -X GET "$BASE_URL/breach-events/user/TEST123")
@@ -172,7 +173,7 @@ run_tests() {
     print_result "/breach-events/user/TEST123 (Get)" "GET" $RESPONSE_STATUS 200
 
     # Test 16: Update Breach Event
-    UPDATE_EVENT_RESPONSE=$(curl -s -w "%{http_code}" -X PUT "$BASE_URL/breach-events/1" \
+    UPDATE_EVENT_RESPONSE=$(curl -s -w "%{http_code}" -X PUT "$BASE_URL/breach-events/$EVENT_ID" \
         -H "Content-Type: application/json" \
         -d '{
             "user_id": "TEST123",
@@ -184,7 +185,7 @@ run_tests() {
             "timestamp": "2025-02-23T00:54:48Z"
         }')
     RESPONSE_STATUS=${UPDATE_EVENT_RESPONSE: -3}
-    print_result "/breach-events/1 (Update)" "PUT" $RESPONSE_STATUS 200
+    print_result "/breach-events/$EVENT_ID (Update)" "PUT" $RESPONSE_STATUS 200
 
     # Test 17: Get Company Breach Events
     GET_COMPANY_EVENTS_RESPONSE=$(curl -s -w "%{http_code}" -X GET "$BASE_URL/breach-events/company/COMP123")
@@ -192,9 +193,9 @@ run_tests() {
     print_result "/breach-events/company/COMP123 (Get)" "GET" $RESPONSE_STATUS 200
 
     # Test 18: Delete Breach Event
-    DELETE_EVENT_RESPONSE=$(curl -s -w "%{http_code}" -X DELETE "$BASE_URL/breach-events/1")
+    DELETE_EVENT_RESPONSE=$(curl -s -w "%{http_code}" -X DELETE "$BASE_URL/breach-events/$EVENT_ID")
     RESPONSE_STATUS=${DELETE_EVENT_RESPONSE: -3}
-    print_result "/breach-events/1 (Delete)" "DELETE" $RESPONSE_STATUS 200
+    print_result "/breach-events/$EVENT_ID (Delete)" "DELETE" $RESPONSE_STATUS 200
 
     # Test 19: Delete Company Breach
     DELETE_BREACH_RESPONSE=$(curl -s -w "%{http_code}" -X DELETE "$BASE_URL/breaches/COMP123")

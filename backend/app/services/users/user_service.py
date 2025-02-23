@@ -98,7 +98,6 @@ class UserService:
             updated_user = User.model_validate(updated_user_data)
             if ip_address:
                 await UserInfoService.add_device(str(updated_user.id), ip_address)
-
             return updated_user
         except Exception as e:
             Logger.error(f'Error updating user: {str(e)}')
