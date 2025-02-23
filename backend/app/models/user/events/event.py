@@ -24,7 +24,7 @@ class BreachEvent(BaseModel):
     severity: SeverityEnum
     status: StatusEnum
     description: str
-    timestamp: datetime
+    timestamp: datetime = datetime.now()
     resolution_notes: Optional[str] = None
     resolution_timestamp: Optional[datetime] = None
 

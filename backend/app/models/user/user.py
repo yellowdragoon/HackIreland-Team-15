@@ -6,7 +6,7 @@ class User(BaseModel):
     id: Optional[Any] = Field(None, alias='_id')
     name: str
     passport_string: str
-    ref_score: int = 0
+    ref_score: int = Field(default=0, description="User's reference score")
 
     def model_dump(self, *args, **kwargs):
         data = super().model_dump(*args, **kwargs)

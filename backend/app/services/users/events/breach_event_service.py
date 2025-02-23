@@ -42,15 +42,27 @@ class BreachEventService:
     @classmethod
     async def get_user_breach_events(cls, user_id: str) -> List[Dict[str, Any]]:
         try:
+            # Try to find events by user_id
             events = await MongoDB.db[cls.collection_name].find(
                 {'user_id': user_id}
             ).sort('timestamp', -1).to_list(None)
+            
+            if not events:
+                # If no events found, try to find by ObjectId
+                try:
+                    events = await MongoDB.db[cls.collection_name].find(
+                        {'user_id': ObjectId(user_id)}
+                    ).sort('timestamp', -1).to_list(None)
+                except:
+                    pass
+            
             if not events:
                 return []
+                
             return [BreachEvent.model_validate(event).model_dump(by_alias=True) for event in events]
         except Exception as e:
             Logger.error(f"Error getting user breach events: {str(e)}")
-            raise e
+            return []  # Return empty list instead of raising
 
     @classmethod
     async def get_company_breach_events(cls, company_id: str) -> List[Dict[str, Any]]:

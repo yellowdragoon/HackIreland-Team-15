@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, Company, BreachType } from '@/lib/api';
+import { BreachTypeEnum } from '@/lib/api';
 
 const breachTypes: BreachTypeEnum[] = [
   'VIOLATING_TERMS',

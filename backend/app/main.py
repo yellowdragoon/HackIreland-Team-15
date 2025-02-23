@@ -77,10 +77,10 @@ app.add_middleware(ErrorHandlingMiddleware)
 
 # routes
 app.include_router(user_router, prefix="/api/v1")
-app.include_router(company_router, prefix="/api/v1")
+app.include_router(breach_events_router, prefix="/api/v1")
 app.include_router(breach_router, prefix="/api/v1")
 app.include_router(user_info_router, prefix="/api/v1")
-app.include_router(breach_events_router, prefix="/api/v1")
+app.include_router(company_router, prefix="/api/v1")
 
 @app.get('/')
 async def read_root():

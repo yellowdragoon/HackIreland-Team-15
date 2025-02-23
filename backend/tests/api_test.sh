@@ -160,8 +160,7 @@ run_tests() {
             "breach_type": "DATA_LEAK",
             "description": "Test breach event",
             "severity": "HIGH",
-            "status": "OPEN",
-            "timestamp": "2025-02-23T00:54:48Z"
+            "status": "OPEN"
         }')
     EVENT_ID=$(echo "$CREATE_EVENT_RESPONSE" | jq -r '.data._id')
     CREATE_STATUS=$(curl -s -w "%{http_code}" -o /dev/null -X GET "$BASE_URL/breach-events/$EVENT_ID")

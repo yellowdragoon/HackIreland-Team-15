@@ -2,11 +2,20 @@ from fastapi import APIRouter, HTTPException, Request
 from app.services.users.user_service import UserService
 from app.models.user.user import User
 from typing import List
+from app.utils.logger.logger import Logger
 
 router = APIRouter(
     prefix="/users",
-    tags=["users"]
+    tags=["users"],
+    responses={
+        404: {"description": "Not found"},
+        500: {"description": "Internal server error"}
+    }
 )
+
+@router.get("/", response_model=List[User])
+async def list_users():
+    return await UserService.list_users()
 
 @router.post("/")
 async def create_user(user: User, request: Request):
@@ -17,15 +26,32 @@ async def create_user(user: User, request: Request):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.get("/{passport_string}")
-async def get_user(passport_string: str, request: Request):
-    ip_address = request.client.host
-    user = await UserService.get_user(passport_string, ip_address)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
+@router.get("/score/{passport_string}",
+         response_model=dict,
+         summary="Get user's reference score",
+         description="Get the reference score for a user based on their breach events and device history.")
+async def get_user_ref_score(passport_string: str):
+    try:
+        Logger.info(f"Getting reference score for user {passport_string}")
+        user = await UserService.get_user(passport_string)
+        if not user:
+            Logger.error(f"User {passport_string} not found")
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        ref_score = await UserService.set_user_risk_score(passport_string)
+        if ref_score is None:
+            Logger.error(f"Failed to calculate reference score for user {passport_string}")
+            raise HTTPException(status_code=500, detail="Failed to calculate reference score")
+            
+        Logger.info(f"Successfully got reference score {ref_score} for user {passport_string}")
+        return {"status": "success", "data": {"ref_score": ref_score}}
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        Logger.error(f"Error getting reference score for user {passport_string}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
-@router.get("/{passport_string}/risk")
+@router.get("/risk/{passport_string}")
 async def get_user_risk(passport_string: str, request: Request):
     try:
         ip_address = request.client.host
@@ -39,10 +65,6 @@ async def get_user_risk(passport_string: str, request: Request):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/")
-async def list_users():
-    return await UserService.list_users()
 
 @router.put("/{passport_string}")
 async def update_user(passport_string: str, user: User, request: Request):
@@ -58,27 +80,26 @@ async def update_user(passport_string: str, user: User, request: Request):
 @router.delete("/{passport_string}")
 async def delete_user(passport_string: str):
     try:
-        success = await UserService.delete_user(passport_string)
-        if not success:
-            raise HTTPException(status_code=404, detail="User not found")
-        return {"status": "success", "message": "User deleted successfully"}
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/{passport_string}/ref-score")
-async def get_user_ref_score(passport_string: str):
-    """Get a user's reference score."""
-    try:
         user = await UserService.get_user(passport_string)
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
-        
-        ref_score = await UserService.set_user_risk_score(str(user.id))
-        if ref_score is None:
-            raise HTTPException(status_code=500, detail="Failed to calculate reference score")
             
-        return {"ref_score": ref_score}
+        success = await UserService.delete_user(passport_string)
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to delete user")
+            
+        return {"status": "success", "message": "User deleted successfully"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/{passport_string}")
+async def get_user(passport_string: str, request: Request):
+    ip_address = request.client.host
+    user = await UserService.get_user(passport_string, ip_address)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
