@@ -1,105 +1,190 @@
 "use client";
 
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
+import { FiShield, FiSearch, FiAlertTriangle, FiUserCheck, FiTrendingUp, FiLock } from 'react-icons/fi';
 
 export default function Home() {
   const router = useRouter();
 
   return (
-    <div className="bg-white">
-      {/* Hero section */}
-      <div className="relative isolate overflow-hidden bg-gradient-to-b from-blue-100/20">
-        <div className="mx-auto max-w-7xl pb-24 pt-10 sm:pb-32 lg:grid lg:grid-cols-2 lg:gap-x-8 lg:px-8 lg:py-40">
-          <div className="px-6 lg:px-0 lg:pt-4">
-            <div className="mx-auto max-w-2xl">
-              <div className="max-w-lg">
-                <h1 className="mt-10 text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
-                  Protect Your Platform from High-Risk Users
-                </h1>
-                <p className="mt-6 text-lg leading-8 text-gray-600">
-                  Check if users have breached terms of service on other platforms before they join yours. 
-                  Stop bad actors before they cause damage.
-                </p>
-                <div className="mt-10 flex items-center gap-x-6">
-                  <button
-                    onClick={() => router.push('/onboarding')}
-                    className="rounded-md bg-blue-600 px-6 py-3 text-lg font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
-                  >
-                    Get Started
-                  </button>
-                  <button
-                    onClick={() => router.push('/login')}
-                    className="text-lg font-semibold leading-6 text-gray-900"
-                  >
-                    Log in <span aria-hidden="true">→</span>
-                  </button>
-                </div>
-              </div>
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white">
+      {/* Navbar */}
+      <nav className="fixed w-full z-50 bg-slate-900/80 backdrop-blur-md border-b border-slate-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16 items-center">
+            <div className="flex items-center">
+              <FiShield className="h-8 w-8 text-blue-500" />
+              <span className="ml-2 text-xl font-bold">TrustGuard</span>
+            </div>
+            <div className="flex items-center space-x-4">
+              <button onClick={() => router.push('/login')} className="text-sm font-medium hover:text-blue-400 transition-colors">
+                Login
+              </button>
+              <button
+                onClick={() => router.push('/onboarding')}
+                className="bg-blue-500 hover:bg-blue-600 text-sm px-4 py-2 rounded-lg transition-colors"
+              >
+                Get Started
+              </button>
             </div>
           </div>
         </div>
-      </div>
+      </nav>
 
-      {/* Feature section */}
-      <div className="mx-auto mt-8 max-w-7xl px-6 sm:mt-16 lg:px-8">
-        <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">How It Works</h2>
+      {/* Hero Section */}
+      <div className="relative pt-24 pb-32 sm:pt-32 sm:pb-40">
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
         </div>
-
-        <div className="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-none">
-          <dl className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-16 lg:max-w-none lg:grid-cols-3">
-            <div className="flex flex-col">
-              <dt className="text-lg font-semibold leading-7 text-gray-900">
-                1. Check Users
-              </dt>
-              <dd className="mt-4 flex flex-auto flex-col text-base leading-7 text-gray-600">
-                <p className="flex-auto">
-                  Enter a user's ID to instantly check if they've breached terms of service on other platforms.
-                </p>
-              </dd>
-            </div>
-            <div className="flex flex-col">
-              <dt className="text-lg font-semibold leading-7 text-gray-900">
-                2. View Risk Scores
-              </dt>
-              <dd className="mt-4 flex flex-auto flex-col text-base leading-7 text-gray-600">
-                <p className="flex-auto">
-                  Get a trust score based on past breaches, their severity, and recency. Make informed decisions about user access.
-                </p>
-              </dd>
-            </div>
-            <div className="flex flex-col">
-              <dt className="text-lg font-semibold leading-7 text-gray-900">
-                3. Report Breaches
-              </dt>
-              <dd className="mt-4 flex flex-auto flex-col text-base leading-7 text-gray-600">
-                <p className="flex-auto">
-                  Report users who breach your terms. Help protect other platforms from bad actors.
-                </p>
-              </dd>
-            </div>
-          </dl>
-        </div>
-      </div>
-
-      {/* CTA section */}
-      <div className="mt-32 sm:mt-40 mb-32">
-        <div className="relative isolate overflow-hidden bg-gray-900 px-6 py-24 text-center shadow-2xl sm:rounded-3xl sm:px-16">
-          <h2 className="mx-auto max-w-2xl text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Start protecting your platform today
-          </h2>
-          <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-gray-300">
-            Join our network of platforms working together to stop bad actors and protect users.
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center"
+        >
+          <h1 className="text-5xl sm:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-600 mb-8">
+            Protect Your Platform
+            <br />
+            <span className="text-4xl sm:text-6xl">from High-Risk Users</span>
+          </h1>
+          <p className="mt-6 text-xl text-slate-300 max-w-3xl mx-auto">
+            Identify and stop bad actors before they cause damage. Our AI-powered platform helps you make informed decisions about who to trust.
           </p>
-          <div className="mt-10 flex items-center justify-center gap-x-6">
-            <button
+          <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => router.push('/onboarding')}
-              className="rounded-md bg-white px-6 py-3 text-lg font-semibold text-gray-900 shadow-sm hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+              className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-blue-500 to-blue-700 rounded-xl font-bold text-lg shadow-lg hover:shadow-blue-500/25 transition-shadow"
             >
-              Get Started
-            </button>
+              Start Protecting Now
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => router.push('/demo')}
+              className="w-full sm:w-auto px-8 py-4 bg-slate-800 rounded-xl font-bold text-lg border border-slate-700 hover:bg-slate-700 transition-colors"
+            >
+              Watch Demo
+            </motion.button>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Stats Section */}
+      <div className="bg-slate-800/50 py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="p-8 rounded-2xl bg-slate-800/50 border border-slate-700"
+            >
+              <div className="text-4xl font-bold text-blue-400">98%</div>
+              <div className="mt-2 text-slate-300">Accuracy Rate</div>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="p-8 rounded-2xl bg-slate-800/50 border border-slate-700"
+            >
+              <div className="text-4xl font-bold text-blue-400">5M+</div>
+              <div className="mt-2 text-slate-300">Users Screened</div>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+              className="p-8 rounded-2xl bg-slate-800/50 border border-slate-700"
+            >
+              <div className="text-4xl font-bold text-blue-400">24/7</div>
+              <div className="mt-2 text-slate-300">Real-time Protection</div>
+            </motion.div>
           </div>
         </div>
+      </div>
+
+      {/* Features Section */}
+      <div className="py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl font-bold mb-4">How It Works</h2>
+            <p className="text-slate-400 text-lg">Powerful features to keep your platform safe</p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              {
+                icon: <FiSearch className="w-8 h-8" />,
+                title: 'Instant Verification',
+                description: 'Check user history across platforms in milliseconds'
+              },
+              {
+                icon: <FiTrendingUp className="w-8 h-8" />,
+                title: 'Risk Scoring',
+                description: 'Get detailed risk assessments powered by AI'
+              },
+              {
+                icon: <FiAlertTriangle className="w-8 h-8" />,
+                title: 'Early Warning',
+                description: 'Detect potential threats before they become problems'
+              }
+            ].map((feature, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                className="p-8 rounded-2xl bg-slate-800/50 border border-slate-700 hover:border-blue-500/50 transition-colors"
+              >
+                <div className="text-blue-400 mb-4">{feature.icon}</div>
+                <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
+                <p className="text-slate-400">{feature.description}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* CTA Section */}
+      <div className="py-24">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+        >
+          <div className="relative rounded-3xl overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 opacity-90" />
+            <div className="relative px-8 py-16 sm:px-16 sm:py-24 text-center">
+              <h2 className="text-4xl font-bold mb-4">
+                Start protecting your platform today
+              </h2>
+              <p className="text-lg text-slate-100 mb-8 max-w-2xl mx-auto">
+                Join thousands of platforms working together to create a safer digital environment.
+              </p>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => router.push('/onboarding')}
+                className="px-8 py-4 bg-white text-slate-900 rounded-xl font-bold text-lg hover:bg-slate-100 transition-colors"
+              >
+                Get Started Now
+              </motion.button>
+            </div>
+          </div>
+        </motion.div>
       </div>
     </div>
   );

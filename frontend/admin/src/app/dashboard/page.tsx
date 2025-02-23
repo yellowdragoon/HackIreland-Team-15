@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
+import dynamic from 'next/dynamic';
 
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
@@ -33,6 +34,9 @@ export default function DashboardPage() {
   useEffect(() => {
     loadDashboard();
   }, []);
+
+  // Import Navbar component
+  const Navbar = dynamic(() => import('@/components/Navbar'), { ssr: false });
 
   const loadDashboard = async () => {
     try {
@@ -130,9 +134,19 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-100 p-8">
-        <div className="max-w-7xl mx-auto">
-          Loading dashboard...
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+        <Navbar />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-col items-center justify-center h-[60vh]">
+            <div className="relative">
+              <div className="w-12 h-12 rounded-full absolute border-4 border-dashed border-gray-200"></div>
+              <div className="w-12 h-12 rounded-full animate-spin absolute border-4 border-blue-600 border-t-transparent"></div>
+            </div>
+            <div className="mt-4 text-center">
+              <div className="text-xl font-semibold text-gray-900">Loading Dashboard</div>
+              <div className="text-sm text-gray-500">Fetching latest security data...</div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -155,16 +169,34 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <Navbar />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Breach Monitoring Dashboard</h1>
-          <button
-            onClick={() => loadDashboard()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-          >
-            Refresh Data
-          </button>
+          <div>
+            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">Security Overview</h1>
+            <p className="mt-2 text-gray-600">Monitor and manage security incidents across your organization</p>
+          </div>
+          <div className="flex space-x-4">
+            <button
+              onClick={() => setShowCreateEvent(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm hover:shadow flex items-center space-x-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+              </svg>
+              <span>New Event</span>
+            </button>
+            <button
+              onClick={() => loadDashboard()}
+              className="px-4 py-2 text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-all shadow-sm hover:shadow flex items-center space-x-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span>Refresh</span>
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -174,21 +206,65 @@ export default function DashboardPage() {
         )}
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-6 transform hover:scale-105 transition-transform">
-            <h3 className="text-lg font-medium text-gray-900">Total Breaches</h3>
-            <p className="mt-2 text-3xl font-bold">{stats.totalBreaches}</p>
-            <p className="mt-1 text-sm text-gray-500">All reported incidents</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all p-6 border border-gray-100">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Total Breaches</h3>
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900">{stats.totalBreaches}</p>
+            <div className="mt-2 flex items-center text-sm text-gray-500">
+              <span>Total security incidents</span>
+            </div>
           </div>
-          <div className="bg-white rounded-lg shadow p-6 transform hover:scale-105 transition-transform">
-            <h3 className="text-lg font-medium text-gray-900">Unresolved Breaches</h3>
-            <p className="mt-2 text-3xl font-bold text-red-600">{stats.unresolvedBreaches}</p>
-            <p className="mt-1 text-sm text-gray-500">Require immediate attention</p>
+
+          <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all p-6 border border-gray-100">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Unresolved</h3>
+              <div className="p-2 bg-red-50 rounded-lg">
+                <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-red-600">{stats.unresolvedBreaches}</p>
+            <div className="mt-2 flex items-center text-sm text-gray-500">
+              <span>Pending resolution</span>
+            </div>
           </div>
-          <div className="bg-white rounded-lg shadow p-6 transform hover:scale-105 transition-transform">
-            <h3 className="text-lg font-medium text-gray-900">High Risk Users</h3>
-            <p className="mt-2 text-3xl font-bold text-orange-600">{stats.highRiskUsers}</p>
-            <p className="mt-1 text-sm text-gray-500">Users with risk score > 70</p>
+
+          <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all p-6 border border-gray-100">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">High Risk</h3>
+              <div className="p-2 bg-orange-50 rounded-lg">
+                <svg className="w-6 h-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-orange-600">{stats.highRiskUsers}</p>
+            <div className="mt-2 flex items-center text-sm text-gray-500">
+              <span>Users requiring attention</span>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all p-6 border border-gray-100">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Total Users</h3>
+              <div className="p-2 bg-green-50 rounded-lg">
+                <svg className="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900">{stats.totalUsers}</p>
+            <div className="mt-2 flex items-center text-sm text-gray-500">
+              <span>Total monitored accounts</span>
+            </div>
           </div>
         </div>
 
