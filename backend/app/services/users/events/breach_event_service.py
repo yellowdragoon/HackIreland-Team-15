@@ -15,17 +15,13 @@ class BreachEventService:
         try:
             event_dict = event.model_dump(exclude={'id'})
             result = await MongoDB.db[cls.collection_name].insert_one(event_dict)
-            
+
             created_event = await MongoDB.db[cls.collection_name].find_one(
                 {'_id': result.inserted_id}
             )
             if not created_event:
                 return None
-
-            # Convert ObjectId to string
             created_event['_id'] = str(created_event['_id'])
-            
-            # Return as plain dict
             return dict(created_event)
         except Exception as e:
             Logger.error(f"Error creating breach event: {str(e)}")
@@ -39,11 +35,7 @@ class BreachEventService:
             )
             if not event:
                 return None
-
-            # Convert ObjectId to string
             event['_id'] = str(event['_id'])
-            
-            # Return as plain dict
             return dict(event)
         except Exception as e:
             Logger.error(f"Error getting breach event: {str(e)}")
@@ -55,7 +47,6 @@ class BreachEventService:
             events = await MongoDB.db[cls.collection_name].find(
                 {'user_id': user_id}
             ).sort('created_at', -1).to_list(None)
-            # Convert ObjectId to string for each event
             for event in events:
                 event['_id'] = str(event['_id'])
             return events

@@ -113,7 +113,19 @@ run_tests() {
     RESPONSE_STATUS=${GET_COMPANY_RESPONSE: -3}
     print_result "/companies/COMP123 (Get)" "GET" $RESPONSE_STATUS 200
 
-    # Test 8: Create Breach Type
+    # Test 8: List Companies
+    LIST_COMPANIES_RESPONSE=$(curl -s -w "%{http_code}" -X GET "$BASE_URL/companies/")
+    RESPONSE_STATUS=${LIST_COMPANIES_RESPONSE: -3}
+    print_result "/companies/ (List)" "GET" $RESPONSE_STATUS 200
+
+    # Test 9: Update Company
+    UPDATE_COMPANY_RESPONSE=$(curl -s -w "%{http_code}" -X PUT "$BASE_URL/companies/COMP123" \
+        -H "Content-Type: application/json" \
+        -d '{"name": "Updated Company", "id": "COMP123", "industry": "Technology"}')
+    RESPONSE_STATUS=${UPDATE_COMPANY_RESPONSE: -3}
+    print_result "/companies/COMP123 (Update)" "PUT" $RESPONSE_STATUS 200
+
+    # Test 10: Create Breach Type
     echo -e "\n${BLUE}Testing Breach Type Endpoints:${NC}"
     CREATE_BREACH_RESPONSE=$(curl -s -w "%{http_code}" -X POST "$BASE_URL/breaches/COMP123" \
         -H "Content-Type: application/json" \
@@ -121,12 +133,24 @@ run_tests() {
     RESPONSE_STATUS=${CREATE_BREACH_RESPONSE: -3}
     print_result "/breaches/COMP123 (Create)" "POST" $RESPONSE_STATUS 200
 
-    # Test 9: Get Company Breach
+    # Test 11: Get Company Breach
     GET_BREACH_RESPONSE=$(curl -s -w "%{http_code}" -X GET "$BASE_URL/breaches/COMP123")
     RESPONSE_STATUS=${GET_BREACH_RESPONSE: -3}
     print_result "/breaches/COMP123 (Get)" "GET" $RESPONSE_STATUS 200
 
-    # Test 10: Create Breach Event
+    # Test 12: Update Company Breach
+    UPDATE_BREACH_RESPONSE=$(curl -s -w "%{http_code}" -X PUT "$BASE_URL/breaches/COMP123" \
+        -H "Content-Type: application/json" \
+        -d '{"breach_type": "DATA_LEAK", "effect_score": 85, "description": "Updated breach", "timestamp": "2025-02-23T00:54:48Z"}')
+    RESPONSE_STATUS=${UPDATE_BREACH_RESPONSE: -3}
+    print_result "/breaches/COMP123 (Update)" "PUT" $RESPONSE_STATUS 200
+
+    # Test 13: Get High Impact Breaches
+    HIGH_IMPACT_RESPONSE=$(curl -s -w "%{http_code}" -X GET "$BASE_URL/breaches/high-impact/70")
+    RESPONSE_STATUS=${HIGH_IMPACT_RESPONSE: -3}
+    print_result "/breaches/high-impact/70 (Get High Impact)" "GET" $RESPONSE_STATUS 200
+
+    # Test 14: Create Breach Event
     echo -e "\n${BLUE}Testing Breach Events Endpoints:${NC}"
     CREATE_EVENT_RESPONSE=$(curl -s -w "%{http_code}" -X POST "$BASE_URL/breach-events/" \
         -H "Content-Type: application/json" \
@@ -142,10 +166,50 @@ run_tests() {
     RESPONSE_STATUS=${CREATE_EVENT_RESPONSE: -3}
     print_result "/breach-events/ (Create)" "POST" $RESPONSE_STATUS 200
 
-    # Test 11: Get User Breach Events
+    # Test 15: Get User Breach Events
     GET_EVENTS_RESPONSE=$(curl -s -w "%{http_code}" -X GET "$BASE_URL/breach-events/user/TEST123")
     RESPONSE_STATUS=${GET_EVENTS_RESPONSE: -3}
     print_result "/breach-events/user/TEST123 (Get)" "GET" $RESPONSE_STATUS 200
+
+    # Test 16: Update Breach Event
+    UPDATE_EVENT_RESPONSE=$(curl -s -w "%{http_code}" -X PUT "$BASE_URL/breach-events/1" \
+        -H "Content-Type: application/json" \
+        -d '{
+            "user_id": "TEST123",
+            "company_id": "COMP123",
+            "breach_type": "DATA_LEAK",
+            "description": "Updated breach event",
+            "severity": "CRITICAL",
+            "status": "IN_PROGRESS",
+            "timestamp": "2025-02-23T00:54:48Z"
+        }')
+    RESPONSE_STATUS=${UPDATE_EVENT_RESPONSE: -3}
+    print_result "/breach-events/1 (Update)" "PUT" $RESPONSE_STATUS 200
+
+    # Test 17: Get Company Breach Events
+    GET_COMPANY_EVENTS_RESPONSE=$(curl -s -w "%{http_code}" -X GET "$BASE_URL/breach-events/company/COMP123")
+    RESPONSE_STATUS=${GET_COMPANY_EVENTS_RESPONSE: -3}
+    print_result "/breach-events/company/COMP123 (Get)" "GET" $RESPONSE_STATUS 200
+
+    # Test 18: Delete Breach Event
+    DELETE_EVENT_RESPONSE=$(curl -s -w "%{http_code}" -X DELETE "$BASE_URL/breach-events/1")
+    RESPONSE_STATUS=${DELETE_EVENT_RESPONSE: -3}
+    print_result "/breach-events/1 (Delete)" "DELETE" $RESPONSE_STATUS 200
+
+    # Test 19: Delete Company Breach
+    DELETE_BREACH_RESPONSE=$(curl -s -w "%{http_code}" -X DELETE "$BASE_URL/breaches/COMP123")
+    RESPONSE_STATUS=${DELETE_BREACH_RESPONSE: -3}
+    print_result "/breaches/COMP123 (Delete)" "DELETE" $RESPONSE_STATUS 200
+
+    # Test 20: Delete Company
+    DELETE_COMPANY_RESPONSE=$(curl -s -w "%{http_code}" -X DELETE "$BASE_URL/companies/COMP123")
+    RESPONSE_STATUS=${DELETE_COMPANY_RESPONSE: -3}
+    print_result "/companies/COMP123 (Delete)" "DELETE" $RESPONSE_STATUS 200
+
+    # Test 21: Delete User
+    DELETE_USER_RESPONSE=$(curl -s -w "%{http_code}" -X DELETE "$BASE_URL/users/TEST123")
+    RESPONSE_STATUS=${DELETE_USER_RESPONSE: -3}
+    print_result "/users/TEST123 (Delete)" "DELETE" $RESPONSE_STATUS 200
 
     echo -e "\n${BLUE}API Tests Completed${NC}\n"
 }

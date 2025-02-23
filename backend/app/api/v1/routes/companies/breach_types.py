@@ -48,35 +48,45 @@ async def get_breach(company_id: str):
 @router.put("/{company_id}")
 async def update_breach(company_id: str, breach: CompanyBreachType):
     try:
+        # First check if company exists
+        company = await CompanyService.get_company(company_id)
+        if not company:
+            raise HTTPException(status_code=404, detail=f"Company {company_id} not found")
+
+        # Update breach record
         updated_breach = await CompanyBreachService.update_breach(company_id, breach)
         if not updated_breach:
-            raise HTTPException(status_code=404, detail="Breach not found")
+            raise HTTPException(status_code=404, detail=f"No breach record found for company {company_id}")
         return updated_breach
+    except HTTPException as e:
+        raise e
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/{company_id}")
 async def delete_breach(company_id: str):
     try:
+        # First check if company exists
+        company = await CompanyService.get_company(company_id)
+        if not company:
+            raise HTTPException(status_code=404, detail=f"Company {company_id} not found")
+
+        # Delete breach record
         success = await CompanyBreachService.delete_breach(company_id)
         if not success:
-            raise HTTPException(status_code=404, detail="Breach not found")
+            raise HTTPException(status_code=404, detail=f"No breach record found for company {company_id}")
         return {"message": "Breach deleted successfully"}
+    except HTTPException as e:
+        raise e
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/type/{breach_type}")
-async def get_companies_by_breach_type(breach_type: BreachTypeEnum):
-    try:
-        companies = await CompanyBreachService.get_companies_by_breach_type(breach_type)
-        return {"companies": companies}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-@router.get("/high-impact")
-async def get_high_impact_breaches(effect_threshold: int = 70):
+@router.get("/high-impact/{effect_threshold}")
+async def get_high_impact_breaches(effect_threshold: int):
     try:
         breaches = await CompanyBreachService.get_high_impact_breaches(effect_threshold)
+        if not breaches:
+            return {"breaches": []}
         return {"breaches": breaches}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
