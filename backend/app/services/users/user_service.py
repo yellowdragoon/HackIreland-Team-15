@@ -172,10 +172,8 @@ class UserService:
     @classmethod
     async def get_user_by_id(cls, user_id: str) -> Optional[User]:
         try:
-            # First try to find by passport_string
             user_data = await MongoDB.db[cls.collection_name].find_one({'passport_string': user_id})
             if not user_data:
-                # If not found, try by ObjectId
                 try:
                     user_data = await MongoDB.db[cls.collection_name].find_one({'_id': ObjectId(user_id)})
                 except:
@@ -198,8 +196,6 @@ class UserService:
             breach_events = await BreachEventService.get_user_breach_events(user_id)
             if breach_events is None:
                 return None
-
-            # Calculate score based on breach events severity
             severity_weights = {
                 'LOW': 0.25,
                 'MEDIUM': 0.5,
@@ -210,13 +206,9 @@ class UserService:
             total_weight = 0
             for event in breach_events:
                 total_weight += severity_weights.get(event.get('severity', 'LOW'), 0.25)
-
-            # Normalize score between 0 and 1
             num_events = len(breach_events)
             new_score = total_weight / (num_events * 1.0) if num_events > 0 else 0
-
-            # Update user's reference score
-            user.ref_score = int(new_score * 100)  # Store as percentage
+            user.ref_score = int(new_score * 100) 
             await cls.update_user(user.passport_string, user)
 
             return new_score
