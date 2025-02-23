@@ -12,25 +12,36 @@ class CompanyBreachService:
     @classmethod
     async def create_breach_record(cls, company_id: str, breach: CompanyBreachType):
         try:
-            company_exists = await CompanyService.check_if_record_exists(company_id)
-            if not company_exists:
+            # Check if company exists
+            company = await CompanyService.get_company(company_id)
+            if not company:
                 Logger.error(f'Company {company_id} not found')
                 return None
+
+            # Check for existing breach
             existing_breach = await cls.get_breach_by_company(company_id)
             if existing_breach:
                 Logger.warning(f'Breach record already exists for company {company_id}')
                 return existing_breach
 
+            # Create new breach record
             breach_dict = breach.model_dump()
-            breach_dict['company_id'] = ObjectId(company_id)
+            breach_dict['company_id'] = company_id
 
             result = await MongoDB.db[cls.collection_name].insert_one(breach_dict)
 
+            # Get created breach
             created_breach = await MongoDB.db[cls.collection_name].find_one(
                 {'_id': result.inserted_id}
             )
-            created_breach['_id'] = str(created_breach['_id'])
-            return created_breach
+            if not created_breach:
+                return None
+
+            # Convert ObjectId to string
+            if '_id' in created_breach:
+                created_breach['_id'] = str(created_breach['_id'])
+
+            return CompanyBreachType.model_validate(created_breach)
         except Exception as e:
             Logger.error(f'Error creating breach record: {str(e)}')
             return None
@@ -39,13 +50,16 @@ class CompanyBreachService:
     async def get_breach_by_company(cls, company_id: str) -> Optional[CompanyBreachType]:
         try:
             breach = await MongoDB.db[cls.collection_name].find_one(
-                {'company_id': ObjectId(company_id)}
+                {'company_id': company_id}
             )
-            if breach:
+            if not breach:
+                return None
+
+            # Convert ObjectId to string
+            if '_id' in breach:
                 breach['_id'] = str(breach['_id'])
-                breach['company_id'] = str(breach['company_id'])
-                return CompanyBreachType.model_validate(breach)
-            return None
+
+            return CompanyBreachType.model_validate(breach)
         except Exception as e:
             Logger.error(f'Error getting breach record: {str(e)}')
             return None

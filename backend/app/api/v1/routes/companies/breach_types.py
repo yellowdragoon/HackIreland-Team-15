@@ -12,22 +12,38 @@ router = APIRouter(
 @router.post("/{company_id}")
 async def create_breach(company_id: str, breach: CompanyBreachType):
     try:
+        # First check if company exists
+        company = await CompanyService.get_company(company_id)
+        if not company:
+            raise HTTPException(status_code=404, detail=f"Company {company_id} not found")
+
+        # Create breach record
         created_breach = await CompanyBreachService.create_breach_record(company_id, breach)
         if not created_breach:
-            raise HTTPException(status_code=404, detail="Company not found or breach already exists")
+            raise HTTPException(status_code=400, detail="Failed to create breach record")
         return created_breach
+    except HTTPException as e:
+        raise e
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/{company_id}")
 async def get_breach(company_id: str):
     try:
+        # First check if company exists
+        company = await CompanyService.get_company(company_id)
+        if not company:
+            raise HTTPException(status_code=404, detail=f"Company {company_id} not found")
+
+        # Get breach record
         breach = await CompanyBreachService.get_breach_by_company(company_id)
         if not breach:
-            raise HTTPException(status_code=404, detail="Breach not found")
+            raise HTTPException(status_code=404, detail=f"No breach record found for company {company_id}")
         return breach
+    except HTTPException as e:
+        raise e
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.put("/{company_id}")
 async def update_breach(company_id: str, breach: CompanyBreachType):
