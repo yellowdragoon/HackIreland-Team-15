@@ -68,7 +68,6 @@ class UserService:
             cursor = MongoDB.db[cls.collection_name].find()
             users = []
             async for user in cursor:
-                # Convert ObjectId to string before validation
                 if '_id' in user:
                     user['_id'] = str(user['_id'])
                 users.append(User.model_validate(user))
@@ -80,17 +79,38 @@ class UserService:
     @classmethod
     async def update_user(cls, passport_string: str, user: User, ip_address: Optional[str] = None) -> Optional[User]:
         try:
-            update_data = user.model_dump(by_alias=True, exclude={'_id', 'passport_string'})
-            result = await MongoDB.db[cls.collection_name].update_one(
+            # First check if user exists
+            user_data = await MongoDB.db[cls.collection_name].find_one({'passport_string': passport_string})
+            if not user_data:
+                return None
+
+            # Convert ObjectId to string
+            if '_id' in user_data:
+                user_data['_id'] = str(user_data['_id'])
+
+            # Update user data
+            update_data = user.model_dump(exclude={'id', 'passport_string'})
+            await MongoDB.db[cls.collection_name].update_one(
                 {'passport_string': passport_string},
                 {'$set': update_data}
             )
-            if result.modified_count == 0:
+
+            # Get updated user
+            updated_user_data = await MongoDB.db[cls.collection_name].find_one({'passport_string': passport_string})
+            if not updated_user_data:
                 return None
 
-            updated_user = await cls.get_user(passport_string)
-            if ip_address and updated_user:
+            # Convert ObjectId to string
+            if '_id' in updated_user_data:
+                updated_user_data['_id'] = str(updated_user_data['_id'])
+
+            # Create User object
+            updated_user = User.model_validate(updated_user_data)
+
+            # Add device info if IP provided
+            if ip_address:
                 await UserInfoService.add_device(str(updated_user.id), ip_address)
+
             return updated_user
         except Exception as e:
             Logger.error(f'Error updating user: {str(e)}')

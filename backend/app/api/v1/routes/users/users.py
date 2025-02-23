@@ -46,11 +46,14 @@ async def list_users():
 
 @router.put("/{passport_string}")
 async def update_user(passport_string: str, user: User, request: Request):
-    ip_address = request.client.host
-    updated_user = await UserService.update_user(passport_string, user, ip_address)
-    if not updated_user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return updated_user
+    try:
+        ip_address = request.client.host
+        updated_user = await UserService.update_user(passport_string, user, ip_address)
+        if not updated_user:
+            raise HTTPException(status_code=404, detail="User not found")
+        return updated_user
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.delete("/{passport_string}")
 async def delete_user(passport_string: str):
