@@ -53,7 +53,6 @@ class CompanyBreachService:
     @classmethod
     async def get_breach_type(cls, breach_type: str) -> Optional[CompanyBreachType]:
         try:
-            # Convert to lowercase and try to find the enum
             breach_type_lower = breach_type.lower()
             for enum_member in BreachTypeEnum:
                 if enum_member.value == breach_type_lower:

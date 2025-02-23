@@ -1,19 +1,28 @@
 from pydantic import BaseModel, Field
 from typing import Optional, Any
 from datetime import datetime
+from enum import Enum
 from bson import ObjectId
 from app.models.company.breach_type.breach_type import BreachTypeEnum
+
+class SeverityEnum(str, Enum):
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+
+class StatusEnum(str, Enum):
+    OPEN = "OPEN"
+    CLOSED = "CLOSED"
 
 class BreachEvent(BaseModel):
     id: Optional[Any] = Field(None, alias='_id')
     user_id: str
     company_id: str
-    breach_type_id: str
-    breach_type: Optional[BreachTypeEnum] = None
-    severity: int = 0  # 0-10 scale
+    breach_type: BreachTypeEnum
+    severity: SeverityEnum
+    status: StatusEnum
     description: str
-    created_at: datetime = Field(default_factory=datetime.now)
-    resolved: bool = False
+    timestamp: datetime
     resolution_notes: Optional[str] = None
     resolution_timestamp: Optional[datetime] = None
 
@@ -27,10 +36,12 @@ class BreachEvent(BaseModel):
         populate_by_name = True
         json_schema_extra = {
             "example": {
-                "user_id": "user123",
-                "company_id": "company123",
-                "breach_type_id": "breach_type123",
-                "severity": 5,
-                "description": "Suspicious login attempt from unknown device"
+                "user_id": "TEST123",
+                "company_id": "COMP123",
+                "breach_type": "DATA_LEAK",
+                "severity": "HIGH",
+                "status": "OPEN",
+                "description": "Test breach event",
+                "timestamp": "2025-02-23T00:54:48Z"
             }
         }

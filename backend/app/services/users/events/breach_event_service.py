@@ -13,17 +13,6 @@ class BreachEventService:
     @classmethod
     async def create_breach_event(cls, event: BreachEvent) -> Optional[Dict[str, Any]]:
         try:
-            # Validate breach type
-            breach_type_lower = event.breach_type_id.lower()
-            valid_breach_type = False
-            for enum_member in BreachTypeEnum:
-                if enum_member.value == breach_type_lower:
-                    valid_breach_type = True
-                    break
-            
-            if not valid_breach_type:
-                raise ValueError(f"Breach type {event.breach_type_id} not found")
-            
             event_dict = event.model_dump(exclude={'id'})
             result = await MongoDB.db[cls.collection_name].insert_one(event_dict)
             
