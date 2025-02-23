@@ -35,14 +35,14 @@ export default function DashboardPage() {
     loadDashboard();
   }, []);
 
-  // Import Navbar component
+
   const Navbar = dynamic(() => import('@/components/Navbar'), { ssr: false });
 
   const loadDashboard = async () => {
     try {
       setLoading(true);
       console.log('Loading dashboard...');
-      
+
       // Get unresolved breaches
       console.log('Fetching unresolved events...');
       const unresolvedRes = await api.get('/breach-events/unresolved');
@@ -90,20 +90,20 @@ export default function DashboardPage() {
       // Calculate stats
       const highRiskUsers = usersWithScores.filter((u: any) => u.ref_score >= 70);
       console.log('High risk users:', highRiskUsers);
-      
+
       const newStats = {
         totalBreaches: recentEvents.length,
         unresolvedBreaches: unresolvedEvents.length,
         highRiskUsers: highRiskUsers.length,
         totalUsers: usersWithScores.length
       };
-      
+
       console.log('Calculating stats:');
       console.log('- Total breaches:', recentEvents.length, recentEvents);
       console.log('- Unresolved breaches:', unresolvedEvents.length, unresolvedEvents);
       console.log('- High risk users:', highRiskUsers.length, highRiskUsers);
       console.log('- Total users:', usersWithScores.length);
-      
+
       console.log('Setting stats:', newStats);
       setStats(newStats);
     } catch (err: any) {
@@ -514,8 +514,8 @@ export default function DashboardPage() {
                   {userDetails.devices?.length > 0 ? (
                     <div className="grid grid-cols-2 gap-4">
                       {userDetails.devices.map((device: any, index: number) => (
-                        <div 
-                          key={index} 
+                        <div
+                          key={index}
                           className={`bg-white p-4 rounded-lg shadow-sm ${index === 1 ? 'border-2 border-orange-400' : ''}`}
                         >
                           <div className="flex justify-between items-center mb-3">

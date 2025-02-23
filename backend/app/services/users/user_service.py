@@ -1,10 +1,8 @@
 from app.models.user.user import User
 from app.utils.logger.logger import Logger
 from app.core.db.db import MongoDB
-from app.services.users.info.ipcheck import IPCheckResult
 from app.services.users.info.user_info import UserInfoService
 from app.services.users.events.breach_event_service import BreachEventService
-from app.services.users.scoring.scoring import calculate_risk_score
 from typing import Optional, List
 from bson import ObjectId
 
@@ -24,7 +22,6 @@ class UserService:
     async def create_user(cls, user: User, ip_address: str) -> Optional[User]:
         try:
             Logger.info(f'Creating user with passport_string: {user.passport_string}')
-            # First try to get existing user
             existing_user = await cls.get_user(user.passport_string)
             if existing_user:
                 Logger.info(f'User already exists with passport_string: {user.passport_string}')
@@ -37,7 +34,6 @@ class UserService:
                 result = await MongoDB.db[cls.collection_name].insert_one(user_dict)
             except Exception as e:
                 if 'duplicate key error' in str(e):
-                    # Race condition - user was created between our check and insert
                     Logger.info(f'Duplicate key detected, fetching existing user')
                     existing_user = await cls.get_user(user.passport_string)
                     if existing_user:
@@ -52,7 +48,6 @@ class UserService:
                 Logger.error('Failed to find created user')
                 return None
 
-            # Convert ObjectId to string before validation
             if '_id' in created_user_dict:
                 created_user_dict['_id'] = str(created_user_dict['_id'])
             created_user = User.model_validate(created_user_dict)
@@ -157,12 +152,11 @@ class UserService:
             if ip_address:
                 await UserInfoService.add_device(str(user.id), ip_address)
 
-            risk_score = await UserInfoService.get_risk_score(str(user.id))
             devices = await UserInfoService.get_user_devices(str(user.id))
 
             return {
                 "user": user.model_dump(),
-                "risk_score": risk_score,
+                "risk_score": user.ref_score,
                 "devices": devices
             }
         except Exception as e:
@@ -187,15 +181,14 @@ class UserService:
             return None
 
     @classmethod
-    async def set_user_risk_score(cls, user_id: str) -> Optional[float]:
+    async def set_user_risk_score(cls, user_id: str) -> Optional[dict[str, any]]:
         try:
             user = await cls.get_user_by_id(user_id)
             if not user:
-                return None
+                return {"ref_score": 0}
 
             breach_events = await BreachEventService.get_user_breach_events(user_id)
-            if breach_events is None:
-                return None
+
             severity_weights = {
                 'LOW': 0.25,
                 'MEDIUM': 0.5,
@@ -205,13 +198,18 @@ class UserService:
 
             total_weight = 0
             for event in breach_events:
-                total_weight += severity_weights.get(event.get('severity', 'LOW'), 0.25)
+                severity = event.get('severity', 'LOW')
+                weight = severity_weights.get(severity, 0.25)
+                total_weight += weight
+
             num_events = len(breach_events)
             new_score = total_weight / (num_events * 1.0) if num_events > 0 else 0
-            user.ref_score = int(new_score * 100) 
+
+            user.ref_score = int(new_score * 100)
             await cls.update_user(user.passport_string, user)
 
-            return new_score
+            return {"ref_score": user.ref_score}
+
         except Exception as e:
             Logger.error(f"Error setting user risk score: {str(e)}")
-            return None
+            return {"ref_score": 0}

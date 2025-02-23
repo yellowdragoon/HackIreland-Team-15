@@ -23,13 +23,13 @@ async def create_test_data():
         User(passport_string="PS004", name="Alice Brown"),
         User(passport_string="PS005", name="Charlie Davis")
     ]
-    
+
     created_users = []
     for user in test_users:
         created_user = await UserService.create_user(user, "127.0.0.1")
         if created_user:
             created_users.append(created_user)
-    
+
     return ApiResponse(data=created_users, message="Test users created successfully")
 
 @router.get("/", response_model=ApiResponse[List[User]])
@@ -46,10 +46,7 @@ async def create_user(user: User, request: Request):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.get("/score/{passport_string}",
-         response_model=ApiResponse[dict],
-         summary="Get user's reference score",
-         description="Get the reference score for a user based on their breach events and device history.")
+@router.get("/score/{passport_string}")
 async def get_user_ref_score(passport_string: str):
     try:
         Logger.info(f"Getting reference score for user {passport_string}")
@@ -57,14 +54,13 @@ async def get_user_ref_score(passport_string: str):
         if not user:
             Logger.error(f"User {passport_string} not found")
             raise HTTPException(status_code=404, detail="User not found")
-        
-        ref_score = await UserService.set_user_risk_score(passport_string)
+        ref_score = await UserService.set_user_risk_score(str(user.id))
         if ref_score is None:
             Logger.error(f"Failed to calculate reference score for user {passport_string}")
             raise HTTPException(status_code=500, detail="Failed to calculate reference score")
-            
+
         Logger.info(f"Successfully got reference score {ref_score} for user {passport_string}")
-        return {"status": "success", "data": {"ref_score": ref_score}}
+        return ApiResponse(data=ref_score)
     except HTTPException as e:
         raise e
     except Exception as e:
@@ -103,11 +99,11 @@ async def delete_user(passport_string: str):
         user = await UserService.get_user(passport_string)
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
-            
+
         success = await UserService.delete_user(passport_string)
         if not success:
             raise HTTPException(status_code=500, detail="Failed to delete user")
-            
+
         return {"status": "success", "message": "User deleted successfully"}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
