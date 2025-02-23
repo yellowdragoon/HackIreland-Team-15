@@ -51,7 +51,7 @@ export const api = {
       authToken = 'demo_token';
       return;
     }
-    throw new Error('Invalid credentials');
+    throw new Error('Invalid email or password');
   },
 
   logout: () => {

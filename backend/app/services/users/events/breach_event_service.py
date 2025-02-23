@@ -13,7 +13,26 @@ class BreachEventService:
     @classmethod
     async def create_breach_event(cls, event: BreachEvent) -> Optional[Dict[str, Any]]:
         try:
+            # Try to get the company's breach record for the effect score
             event_dict = event.model_dump(exclude={'id'})
+            
+            company_breach = await CompanyBreachService.get_breach_by_company(event.company_id)
+            if company_breach:
+                # If company has a breach record, verify the type matches
+                if company_breach.breach_type != event.breach_type:
+                    Logger.warning(
+                        f"Event breach type {event.breach_type} doesn't match company breach type "
+                        f"{company_breach.breach_type}. Using default score."
+                    )
+                    event_dict['effect_score'] = BreachTypeEnum.get_default_effect_score(event.breach_type)
+                else:
+                    # Use company's custom score
+                    event_dict['effect_score'] = company_breach.effect_score
+            else:
+                # No company breach record, use default score
+                Logger.info(f"No breach record found for company {event.company_id}. Using default score.")
+                event_dict['effect_score'] = BreachTypeEnum.get_default_effect_score(event.breach_type)
+            
             result = await MongoDB.db[cls.collection_name].insert_one(event_dict)
 
             created_event = await MongoDB.db[cls.collection_name].find_one(

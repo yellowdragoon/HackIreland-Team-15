@@ -10,6 +10,19 @@ class BreachTypeEnum(str, Enum):
     SUSPICIOUS_ACTIVITY = "SUSPICIOUS_ACTIVITY"
     ILLEGAL_ACTIVITY = "ILLEGAL_ACTIVITY"
     DATA_LEAK = "DATA_LEAK"
+    
+    @classmethod
+    def get_default_effect_score(cls, breach_type: 'BreachTypeEnum') -> int:
+        """Get the default effect score for a breach type."""
+        default_scores = {
+            cls.VIOLATING_TERMS: 50,
+            cls.FRAUD: 75,
+            cls.DEFAULT: 30,
+            cls.SUSPICIOUS_ACTIVITY: 40,
+            cls.ILLEGAL_ACTIVITY: 90,
+            cls.DATA_LEAK: 85
+        }
+        return default_scores.get(breach_type, 50)  # Default to 50 if type not found
 
 class CompanyBreachType(BaseModel):
     breach_type: BreachTypeEnum
