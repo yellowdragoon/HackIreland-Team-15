@@ -49,6 +49,8 @@ async def create_manual_breach_event(event: ManualBreachEvent):
         event_dict = event.model_dump()
         event_dict['timestamp'] = datetime.utcnow()
         event_dict['manual_entry'] = True
+        event_dict['status'] = event_dict.get('status', 'OPEN')  # Ensure status is set
+        Logger.info(f"Final event dict before creation: {event_dict}")
 
         created_event = await BreachEventService.create_breach_event(event_dict)
         if not created_event:

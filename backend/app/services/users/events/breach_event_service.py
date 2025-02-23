@@ -13,9 +13,17 @@ class BreachEventService:
     @classmethod
     async def get_all_breach_events(cls) -> List[Dict[str, Any]]:
         try:
+            Logger.info(f"Getting all breach events from collection: {cls.collection_name}")
             events = await MongoDB.db[cls.collection_name].find().sort('timestamp', -1).to_list(None)
+            Logger.info(f"Found {len(events) if events else 0} events in database")
             if not events:
+                Logger.info("No events found in database")
                 return []
+            
+            # Log each event for debugging
+            for event in events:
+                Logger.info(f"Event found: {event}")
+            
             return [BreachEvent.model_validate(event).model_dump(by_alias=True) for event in events]
         except Exception as e:
             Logger.error(f"Error getting all events: {str(e)}")
@@ -170,11 +178,21 @@ class BreachEventService:
     @classmethod
     async def get_unresolved_events(cls) -> List[Dict[str, Any]]:
         try:
-            events = await MongoDB.db[cls.collection_name].find(
-                {'status': {'$ne': 'CLOSED'}}
-            ).sort('timestamp', -1).to_list(None)
+            Logger.info("Getting unresolved breach events")
+            query = {'status': {'$ne': 'CLOSED'}}
+            Logger.info(f"Query: {query}")
+            
+            events = await MongoDB.db[cls.collection_name].find(query).sort('timestamp', -1).to_list(None)
+            Logger.info(f"Found {len(events) if events else 0} unresolved events")
+            
             if not events:
+                Logger.info("No unresolved events found")
                 return []
+                
+            # Log each unresolved event for debugging
+            for event in events:
+                Logger.info(f"Unresolved event found: {event}")
+                
             return [BreachEvent.model_validate(event).model_dump(by_alias=True) for event in events]
         except Exception as e:
             Logger.error(f"Error getting unresolved events: {str(e)}")

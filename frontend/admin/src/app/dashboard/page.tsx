@@ -37,13 +37,23 @@ export default function DashboardPage() {
   const loadDashboard = async () => {
     try {
       setLoading(true);
+      console.log('Loading dashboard...');
+      
       // Get unresolved breaches
+      console.log('Fetching unresolved events...');
       const unresolvedRes = await api.get('/breach-events/unresolved');
-      setUnresolved(unresolvedRes.data?.data || []);
+      console.log('Unresolved response:', unresolvedRes);
+      const unresolvedEvents = unresolvedRes.data || [];
+      console.log('Parsed unresolved events:', unresolvedEvents);
+      setUnresolved(unresolvedEvents);
 
       // Get recent breaches
+      console.log('Fetching recent events...');
       const recentRes = await api.get('/breach-events');
-      setRecentBreaches(recentRes.data?.data || []);
+      console.log('Recent response:', recentRes);
+      const recentEvents = recentRes.data || [];
+      console.log('Parsed recent events:', recentEvents);
+      setRecentBreaches(recentEvents);
 
       // Get users
       const usersRes = await api.get('/users');
@@ -73,12 +83,25 @@ export default function DashboardPage() {
       console.log('Users with scores:', usersWithScores); // Debug log
       setUsers(usersWithScores || []);
 
-      // Update stats with high risk users
-      setStats({
-        totalBreaches: recentRes.data?.data?.length || 0,
-        unresolvedBreaches: unresolvedRes.data?.data?.length || 0,
-        highRiskUsers: usersWithScores.filter((u: any) => u.ref_score >= 70).length || 0
-      });
+      // Calculate stats
+      const highRiskUsers = usersWithScores.filter((u: any) => u.ref_score >= 70);
+      console.log('High risk users:', highRiskUsers);
+      
+      const newStats = {
+        totalBreaches: recentEvents.length,
+        unresolvedBreaches: unresolvedEvents.length,
+        highRiskUsers: highRiskUsers.length,
+        totalUsers: usersWithScores.length
+      };
+      
+      console.log('Calculating stats:');
+      console.log('- Total breaches:', recentEvents.length, recentEvents);
+      console.log('- Unresolved breaches:', unresolvedEvents.length, unresolvedEvents);
+      console.log('- High risk users:', highRiskUsers.length, highRiskUsers);
+      console.log('- Total users:', usersWithScores.length);
+      
+      console.log('Setting stats:', newStats);
+      setStats(newStats);
     } catch (err: any) {
       console.error('Dashboard loading error:', err);
       setError(err.message || 'Failed to load dashboard');
@@ -211,6 +234,58 @@ export default function DashboardPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+
+        {/* Unresolved Events */}
+        <div className="bg-white rounded-lg shadow mb-8">
+          <div className="p-6">
+            <h2 className="text-xl font-bold mb-4">Unresolved Events ({unresolved.length})</h2>
+            <div className="space-y-4">
+              {unresolved.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead>
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Score</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {unresolved.map((event: any) => (
+                        <tr key={event._id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap">{event.user_id}</td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                              {event.breach_type}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`font-semibold ${getSeverityColor(event.effect_score)}`}>
+                              {event.effect_score}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">{event.description}</td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <button
+                              onClick={() => setSelectedBreach(event)}
+                              className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                            >
+                              Resolve
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-gray-500 text-center py-4">No unresolved events</p>
+              )}
             </div>
           </div>
         </div>
