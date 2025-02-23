@@ -52,10 +52,11 @@ class UserInfoService:
     @classmethod
     async def get_risk_score(cls, user_id: str) -> int:
         try:
-            devices = await cls.get_user_devices(user_id)
-            if not devices:
+            device_dicts = await cls.get_user_devices(user_id)
+            if not device_dicts:
                 return 0
 
+            devices = [IPCheckResult(**d) for d in device_dicts]
             base_score = max(d.risk_score for d in devices)
             vpn_bonus = 10 if any(d.is_vpn for d in devices) else 0
             proxy_bonus = 15 if any(d.is_proxy for d in devices) else 0

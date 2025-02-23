@@ -21,11 +21,10 @@ class BreachEventService:
             )
             if not created_event:
                 return None
-            created_event['_id'] = str(created_event['_id'])
-            return dict(created_event)
+            return BreachEvent.model_validate(created_event).model_dump(by_alias=True)
         except Exception as e:
             Logger.error(f"Error creating breach event: {str(e)}")
-            return None
+            raise e
 
     @classmethod
     async def get_breach_event(cls, event_id: str) -> Optional[Dict[str, Any]]:
@@ -35,37 +34,36 @@ class BreachEventService:
             )
             if not event:
                 return None
-            event['_id'] = str(event['_id'])
-            return dict(event)
+            return BreachEvent.model_validate(event).model_dump(by_alias=True)
         except Exception as e:
             Logger.error(f"Error getting breach event: {str(e)}")
-            return None
+            raise e
 
     @classmethod
     async def get_user_breach_events(cls, user_id: str) -> List[Dict[str, Any]]:
         try:
             events = await MongoDB.db[cls.collection_name].find(
                 {'user_id': user_id}
-            ).sort('created_at', -1).to_list(None)
-            for event in events:
-                event['_id'] = str(event['_id'])
-            return events
+            ).sort('timestamp', -1).to_list(None)
+            if not events:
+                return []
+            return [BreachEvent.model_validate(event).model_dump(by_alias=True) for event in events]
         except Exception as e:
             Logger.error(f"Error getting user breach events: {str(e)}")
-            return []
+            raise e
 
     @classmethod
     async def get_company_breach_events(cls, company_id: str) -> List[Dict[str, Any]]:
         try:
             events = await MongoDB.db[cls.collection_name].find(
                 {'company_id': company_id}
-            ).sort('created_at', -1).to_list(None)
-            for event in events:
-                event['_id'] = str(event['_id'])
-            return events
+            ).sort('timestamp', -1).to_list(None)
+            if not events:
+                return []
+            return [BreachEvent.model_validate(event).model_dump(by_alias=True) for event in events]
         except Exception as e:
             Logger.error(f"Error getting company breach events: {str(e)}")
-            return []
+            raise e
 
     @classmethod
     async def update_breach_event(cls, event_id: str, event: BreachEvent) -> Optional[Dict[str, Any]]:
@@ -98,13 +96,17 @@ class BreachEventService:
             return False
 
     @classmethod
-    async def resolve_breach_event(cls, event_id: str, resolution_notes: str) -> Optional[BreachEvent]:
+    async def resolve_breach_event(cls, event_id: str, resolution_notes: str) -> Optional[Dict[str, Any]]:
         try:
+            event = await cls.get_breach_event(event_id)
+            if not event:
+                return None
+
             result = await MongoDB.db[cls.collection_name].update_one(
-                {'_id': event_id},
+                {'_id': ObjectId(event_id)},
                 {
                     '$set': {
-                        'resolved': True,
+                        'status': 'CLOSED',
                         'resolution_notes': resolution_notes,
                         'resolution_timestamp': datetime.now()
                     }
@@ -113,18 +115,21 @@ class BreachEventService:
             if result.modified_count == 0:
                 return None
 
-            return await cls.get_breach_event(event_id)
+            updated_event = await cls.get_breach_event(event_id)
+            return BreachEvent.model_validate(updated_event).model_dump(by_alias=True)
         except Exception as e:
             Logger.error(f"Error resolving breach event: {str(e)}")
-            return None
+            raise e
 
     @classmethod
-    async def get_unresolved_events(cls) -> List[BreachEvent]:
+    async def get_unresolved_events(cls) -> List[Dict[str, Any]]:
         try:
             events = await MongoDB.db[cls.collection_name].find(
-                {'resolved': False}
-            ).sort('created_at', -1).to_list(None)
-            return [BreachEvent.model_validate(event) for event in events]
+                {'status': {'$ne': 'CLOSED'}}
+            ).sort('timestamp', -1).to_list(None)
+            if not events:
+                return []
+            return [BreachEvent.model_validate(event).model_dump(by_alias=True) for event in events]
         except Exception as e:
             Logger.error(f"Error getting unresolved events: {str(e)}")
-            return []
+            raise e

@@ -39,6 +39,20 @@ async def create_breach_event(event: BreachEvent):
         Logger.error(f"Error creating breach event: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/unresolved",
+         response_model=dict,
+         summary="Get all unresolved breach events",
+         description="Retrieve all breach events that have not been resolved.")
+async def get_unresolved_events():
+    try:
+        events = await BreachEventService.get_unresolved_events()
+        return {"status": "success", "data": events or []}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        Logger.error(f"Error getting unresolved events: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
 @router.get("/{event_id}",
          response_model=dict,
          summary="Get a breach event by ID",
@@ -150,7 +164,9 @@ async def resolve_breach_event(event_id: str, resolution_notes: str):
 async def get_unresolved_events():
     try:
         events = await BreachEventService.get_unresolved_events()
-        return {"status": "success", "data": events}
+        return {"status": "success", "data": events or []}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         Logger.error(f"Error getting unresolved events: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")

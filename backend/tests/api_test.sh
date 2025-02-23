@@ -192,13 +192,89 @@ run_tests() {
     RESPONSE_STATUS=${GET_COMPANY_EVENTS_RESPONSE: -3}
     print_result "/breach-events/company/COMP123 (Get)" "GET" $RESPONSE_STATUS 200
 
-    # Test 18: Delete Breach Event
+    # Test 18: Get Unresolved Breach Events
+    GET_UNRESOLVED_RESPONSE=$(curl -s -w "%{http_code}" -X GET "$BASE_URL/breach-events/unresolved")
+    RESPONSE_STATUS=${GET_UNRESOLVED_RESPONSE: -3}
+    print_result "/breach-events/unresolved (Get)" "GET" $RESPONSE_STATUS 200
+
+    # Test 19: Resolve Breach Event
+    RESOLVE_EVENT_RESPONSE=$(curl -s -w "%{http_code}" -X POST "$BASE_URL/breach-events/$EVENT_ID/resolve?resolution_notes=Issue%20resolved%20and%20verified" \
+        -H "Content-Type: application/json")
+    RESPONSE_STATUS=${RESOLVE_EVENT_RESPONSE: -3}
+    print_result "/breach-events/$EVENT_ID/resolve (Resolve)" "POST" $RESPONSE_STATUS 200
+
+    # Test 20: Delete Breach Event
     DELETE_EVENT_RESPONSE=$(curl -s -w "%{http_code}" -X DELETE "$BASE_URL/breach-events/$EVENT_ID")
     RESPONSE_STATUS=${DELETE_EVENT_RESPONSE: -3}
     print_result "/breach-events/$EVENT_ID (Delete)" "DELETE" $RESPONSE_STATUS 200
 
-    # Test 19: Delete Company Breach
+    # Test 21: Delete Company Breach
     DELETE_BREACH_RESPONSE=$(curl -s -w "%{http_code}" -X DELETE "$BASE_URL/breaches/COMP123")
+    RESPONSE_STATUS=${DELETE_BREACH_RESPONSE: -3}
+    print_result "/breaches/COMP123 (Delete)" "DELETE" $RESPONSE_STATUS 200
+
+    # Test User-Info Device Endpoints
+    echo -e "\n${BLUE}Testing User-Info Device Endpoints:${NC}"
+
+    # Test 22: Add Device
+    ADD_DEVICE_RESPONSE=$(curl -s -w "%{http_code}" -X POST "$BASE_URL/user-info/devices" \
+        -H "Content-Type: application/json" \
+        -d '{
+            "user_id": "TEST123",
+            "ip_address": "192.168.1.1",
+            "device_name": "Test Device",
+            "mac_address": "00:11:22:33:44:55",
+            "is_vpn": false,
+            "is_proxy": false,
+            "is_datacenter": false,
+            "is_tor": false,
+            "risk_score": 0.0,
+            "country_code": "US",
+            "city": "San Francisco"
+        }')
+    RESPONSE_STATUS=${ADD_DEVICE_RESPONSE: -3}
+    DEVICE_ID=$(echo "${ADD_DEVICE_RESPONSE%???}" | jq -r '.device_id // "test_device_001"')
+    print_result "/user-info/devices (Add)" "POST" $RESPONSE_STATUS 200
+
+    # Test 23: Get User Devices
+    GET_USER_DEVICES_RESPONSE=$(curl -s -w "%{http_code}" -X GET "$BASE_URL/user-info/devices/TEST123")
+    RESPONSE_STATUS=${GET_USER_DEVICES_RESPONSE: -3}
+    print_result "/user-info/devices/TEST123 (Get)" "GET" $RESPONSE_STATUS 200
+
+    # Test 24: Get Device By Id
+    GET_DEVICE_BY_ID_RESPONSE=$(curl -s -w "%{http_code}" -X GET "$BASE_URL/user-info/devices/TEST123")
+    RESPONSE_STATUS=${GET_DEVICE_BY_ID_RESPONSE: -3}
+    print_result "/user-info/devices/TEST123 (Get)" "GET" $RESPONSE_STATUS 200
+
+    # Test 25: Get Suspicious Devices
+    GET_SUSPICIOUS_DEVICES_RESPONSE=$(curl -s -w "%{http_code}" -X GET "$BASE_URL/user-info/devices/suspicious")
+    RESPONSE_STATUS=${GET_SUSPICIOUS_DEVICES_RESPONSE: -3}
+    print_result "/user-info/devices/suspicious (Get)" "GET" $RESPONSE_STATUS 200
+
+    # Test 26: Get Shared Devices
+    GET_SHARED_DEVICES_RESPONSE=$(curl -s -w "%{http_code}" -X GET "$BASE_URL/user-info/devices/shared")
+    RESPONSE_STATUS=${GET_SHARED_DEVICES_RESPONSE: -3}
+    print_result "/user-info/devices/shared (Get)" "GET" $RESPONSE_STATUS 200
+
+    # Test 27: Get User Risk Score
+    GET_RISK_SCORE_RESPONSE=$(curl -s -w "%{http_code}" -X GET "$BASE_URL/user-info/risk-score/TEST123" \
+        -H "Content-Type: application/json")
+    RESPONSE_STATUS=${GET_RISK_SCORE_RESPONSE: -3}
+    print_result "/user-info/risk-score/TEST123 (Get)" "GET" $RESPONSE_STATUS 200
+
+    # Test 28: Delete User Devices
+    DELETE_USER_DEVICES_RESPONSE=$(curl -s -w "%{http_code}" -X DELETE "$BASE_URL/user-info/devices/TEST123" \
+        -H "Content-Type: application/json")
+    RESPONSE_STATUS=${DELETE_USER_DEVICES_RESPONSE: -3}
+    print_result "/user-info/devices/TEST123 (Delete)" "DELETE" $RESPONSE_STATUS 200
+
+    # Ensure we wait a bit for device deletion to complete
+    sleep 1
+
+    # Test 29: Delete User
+    DELETE_USER_RESPONSE=$(curl -s -w "%{http_code}" -X DELETE "$BASE_URL/users/TEST123")
+    RESPONSE_STATUS=${DELETE_USER_RESPONSE: -3}
+    print_result "/users/TEST123 (Delete)" "DELETE" $RESPONSE_STATUS 200
     RESPONSE_STATUS=${DELETE_BREACH_RESPONSE: -3}
     print_result "/breaches/COMP123 (Delete)" "DELETE" $RESPONSE_STATUS 200
 
@@ -207,10 +283,6 @@ run_tests() {
     RESPONSE_STATUS=${DELETE_COMPANY_RESPONSE: -3}
     print_result "/companies/COMP123 (Delete)" "DELETE" $RESPONSE_STATUS 200
 
-    # Test 21: Delete User
-    DELETE_USER_RESPONSE=$(curl -s -w "%{http_code}" -X DELETE "$BASE_URL/users/TEST123")
-    RESPONSE_STATUS=${DELETE_USER_RESPONSE: -3}
-    print_result "/users/TEST123 (Delete)" "DELETE" $RESPONSE_STATUS 200
 
     echo -e "\n${BLUE}API Tests Completed${NC}\n"
 }

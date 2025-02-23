@@ -11,7 +11,7 @@ router = APIRouter(
 @router.post("/devices")
 async def add_device(device: IPCheckResult):
     try:
-        device_id = await UserInfoService.add_device_fingerprint(device)
+        device_id = await UserInfoService.add_device(device.user_id, device.ip_address)
         if not device_id:
             raise HTTPException(status_code=400, detail="Failed to add device")
         return {"device_id": device_id}
@@ -65,7 +65,7 @@ async def get_device_by_id(device_id: str) -> Optional[IPCheckResult]:
 @router.get("/risk-score/{user_id}")
 async def get_user_risk_score(user_id: str):
     try:
-        score = await UserInfoService.get_user_risk_score(user_id)
+        score = await UserInfoService.get_risk_score(user_id)
         return {"user_id": user_id, "risk_score": score}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
