@@ -175,4 +175,5 @@ class UserService:
             return new_score
         except Exception as e:
             Logger.error(f"Error setting user risk score: {str(e)}")
-            return None
+            return None 
+        
