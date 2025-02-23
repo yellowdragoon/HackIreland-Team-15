@@ -28,16 +28,18 @@ class UserService:
 
             user_dict = user.model_dump(exclude={'id'})
             result = await MongoDB.db[cls.collection_name].insert_one(user_dict)
-            
+
             created_user_dict = await MongoDB.db[cls.collection_name].find_one(
                 {'_id': result.inserted_id}
             )
             if not created_user_dict:
                 return None
 
-            created_user_dict['_id'] = str(created_user_dict['_id'])
+            # Convert ObjectId to string before validation
+            if '_id' in created_user_dict:
+                created_user_dict['_id'] = str(created_user_dict['_id'])
             created_user = User.model_validate(created_user_dict)
-            
+
             await UserInfoService.add_device(str(created_user.id), ip_address)
             return created_user
         except Exception as e:
@@ -49,6 +51,9 @@ class UserService:
         try:
             user_data = await MongoDB.db[cls.collection_name].find_one({'passport_string': passport_string})
             if user_data:
+                # Convert ObjectId to string before validation
+                if '_id' in user_data:
+                    user_data['_id'] = str(user_data['_id'])
                 if ip_address:
                     await UserInfoService.add_device(str(user_data['_id']), ip_address)
                 return User.model_validate(user_data)
@@ -63,6 +68,9 @@ class UserService:
             cursor = MongoDB.db[cls.collection_name].find()
             users = []
             async for user in cursor:
+                # Convert ObjectId to string before validation
+                if '_id' in user:
+                    user['_id'] = str(user['_id'])
                 users.append(User.model_validate(user))
             return users
         except Exception as e:

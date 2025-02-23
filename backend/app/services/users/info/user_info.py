@@ -14,13 +14,12 @@ class UserInfoService:
         try:
             ip_check = await IPCheckService.check_ip(ip_address)
 
-            device_data = ip_check.model_dump(exclude={'user_id', 'ip_address', 'last_seen'})
-            device_data.update({
-                'user_id': user_id,
-                'ip_address': ip_address,
-                'last_seen': datetime.now()
-            })
-            device = IPCheckResult(**device_data)
+            device = IPCheckResult(
+                user_id=user_id,
+                ip_address=ip_address,
+                **ip_check.model_dump(exclude={'user_id', 'ip_address', 'last_seen'}),
+                last_seen=datetime.now()
+            )
 
             result = await MongoDB.db[cls.collection_name].update_one(
                 {

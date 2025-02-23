@@ -2,6 +2,8 @@ from fastapi import FastAPI
 import uvicorn
 from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from bson import ObjectId
 from app.api.v1.routes.users.users import router as user_router
 from app.api.v1.routes.companies.companies import router as company_router
 from app.api.v1.routes.companies.breach_types import router as breach_router
@@ -10,24 +12,27 @@ from app.api.v1.routes.users.events.breach_events import router as breach_events
 from app.utils.logger.logger import Logger
 from app.core.db.db import get_db, MongoDB
 from app.core.middleware import ErrorHandlingMiddleware
+from app.utils.json_encoder import CustomJSONEncoder
 
 load_dotenv()
 
 app = FastAPI(
     title="HackIreland API",
+    default_response_class=JSONResponse,
+    json_encoders={ObjectId: str},
     description="""### API for HackIreland Team 15 project
 
     This API provides endpoints for managing users, companies, and breach events.
-    
+
     Key Features:
     * User Management
     * Company Management
     * Breach Event Tracking
     * User Information Management
-    
+
     ### Authentication
     Most endpoints require authentication. Use the authentication token in the Authorization header.
-    
+
     ### Rate Limiting
     API calls are rate-limited to prevent abuse.
     """,
@@ -70,7 +75,7 @@ app.add_middleware(
 # Middleware
 app.add_middleware(ErrorHandlingMiddleware)
 
-# Include API routes
+# routes
 app.include_router(user_router, prefix="/api/v1")
 app.include_router(company_router, prefix="/api/v1")
 app.include_router(breach_router, prefix="/api/v1")
