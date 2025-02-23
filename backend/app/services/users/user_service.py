@@ -24,6 +24,7 @@ class UserService:
     async def create_user(cls, user: User, ip_address: str) -> Optional[User]:
         try:
             Logger.info(f'Creating user with passport_string: {user.passport_string}')
+            # First try to get existing user
             existing_user = await cls.get_user(user.passport_string)
             if existing_user:
                 Logger.info(f'User already exists with passport_string: {user.passport_string}')
@@ -32,7 +33,17 @@ class UserService:
 
             user_dict = user.model_dump(exclude={'id'})
             Logger.info(f'Creating new user with data: {user_dict}')
-            result = await MongoDB.db[cls.collection_name].insert_one(user_dict)
+            try:
+                result = await MongoDB.db[cls.collection_name].insert_one(user_dict)
+            except Exception as e:
+                if 'duplicate key error' in str(e):
+                    # Race condition - user was created between our check and insert
+                    Logger.info(f'Duplicate key detected, fetching existing user')
+                    existing_user = await cls.get_user(user.passport_string)
+                    if existing_user:
+                        await UserInfoService.add_device(str(existing_user.id), ip_address)
+                        return existing_user
+                raise
 
             created_user_dict = await MongoDB.db[cls.collection_name].find_one(
                 {'_id': result.inserted_id}
@@ -57,20 +68,17 @@ class UserService:
     async def get_user(cls, passport_string: str, ip_address: Optional[str] = None) -> Optional[User]:
         try:
             Logger.info(f'Getting user with passport_string: {passport_string}')
-            # First try to find by passport_string
             user_data = await MongoDB.db[cls.collection_name].find_one({'passport_string': passport_string})
             if not user_data:
                 Logger.info(f'User not found by passport_string, trying ObjectId')
-                # If not found, try by ObjectId
                 try:
                     user_data = await MongoDB.db[cls.collection_name].find_one({'_id': ObjectId(passport_string)})
                 except:
                     Logger.info('Invalid ObjectId format')
                     pass
-            
+
             if user_data:
                 Logger.info(f'Found user data: {user_data}')
-                # Convert ObjectId to string before validation
                 if '_id' in user_data:
                     user_data['_id'] = str(user_data['_id'])
                 if ip_address:
@@ -198,7 +206,7 @@ class UserService:
                 'HIGH': 0.75,
                 'CRITICAL': 1.0
             }
-            
+
             total_weight = 0
             for event in breach_events:
                 total_weight += severity_weights.get(event.get('severity', 'LOW'), 0.25)

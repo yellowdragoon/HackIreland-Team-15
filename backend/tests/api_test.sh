@@ -22,21 +22,43 @@ print_result() {
     fi
 }
 
+# Function to make a curl request with timeout and error handling
+make_request() {
+    local method=$1
+    local endpoint=$2
+    local data=$3
+
+    response=$(curl -s -w "%{http_code}" \
+        --max-time 5 \
+        -X "$method" \
+        -H "Content-Type: application/json" \
+        ${data:+-d "$data"} \
+        "$BASE_URL$endpoint" 2>/dev/null)
+
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}Error: Failed to connect to server${NC}" >&2
+        return 1
+    fi
+
+    echo "$response"
+    return 0
+}
+
 # Function to cleanup test data
 cleanup_test_data() {
     echo -e "\n${BLUE}Cleaning up test data...${NC}"
 
     # Delete breach events
-    curl -s -X DELETE "$BASE_URL/breach-events/user/TEST123" > /dev/null
+    make_request "DELETE" "/breach-events/user/TEST123" > /dev/null
 
     # Delete breaches
-    curl -s -X DELETE "$BASE_URL/breaches/COMP123" > /dev/null
+    make_request "DELETE" "/breaches/COMP123" > /dev/null
 
     # Delete company
-    curl -s -X DELETE "$BASE_URL/companies/COMP123" > /dev/null
+    make_request "DELETE" "/companies/COMP123" > /dev/null
 
     # Delete user
-    curl -s -X DELETE "$BASE_URL/users/TEST123" > /dev/null
+    make_request "DELETE" "/users/TEST123" > /dev/null
 
     echo -e "${GREEN}Cleanup completed${NC}"
 }
@@ -46,21 +68,17 @@ ensure_test_data() {
     echo -e "\n${BLUE}Ensuring test data exists...${NC}"
 
     # Check if test user exists
-    USER_EXISTS=$(curl -s -w "%{http_code}" -X GET "$BASE_URL/users/TEST123")
-    if [ "${USER_EXISTS: -3}" != "200" ]; then
+    USER_EXISTS=$(make_request "GET" "/users/TEST123")
+    if [ $? -eq 0 ] && [ "${USER_EXISTS: -3}" != "200" ]; then
         echo "Creating test user..."
-        curl -s -X POST "$BASE_URL/users/" \
-            -H "Content-Type: application/json" \
-            -d '{"name": "Test User", "passport_string": "TEST123", "ref_score": 5}' > /dev/null
+        make_request "POST" "/users/" '{"name": "Test User", "passport_string": "TEST123", "ref_score": 5}' > /dev/null
     fi
 
     # Check if test company exists
-    COMPANY_EXISTS=$(curl -s -w "%{http_code}" -X GET "$BASE_URL/companies/COMP123")
-    if [ "${COMPANY_EXISTS: -3}" != "200" ]; then
+    COMPANY_EXISTS=$(make_request "GET" "/companies/COMP123")
+    if [ $? -eq 0 ] && [ "${COMPANY_EXISTS: -3}" != "200" ]; then
         echo "Creating test company..."
-        curl -s -X POST "$BASE_URL/companies/" \
-            -H "Content-Type: application/json" \
-            -d '{"name": "Test Company", "id": "COMP123", "industry": "Technology"}' > /dev/null
+        make_request "POST" "/companies/" '{"name": "Test Company", "id": "COMP123", "industry": "Technology"}' > /dev/null
     fi
 
     echo -e "${GREEN}Test data setup completed${NC}"
@@ -72,33 +90,54 @@ run_tests() {
 
     # Test 1: Create User
     echo -e "${BLUE}Testing User Endpoints:${NC}"
-    CREATE_USER_RESPONSE=$(curl -s -w "%{http_code}" -X POST "$BASE_URL/users/" \
-        -H "Content-Type: application/json" \
-        -d '{"name": "Test User", "passport_string": "TEST123", "ref_score": 5}')
-    RESPONSE_STATUS=${CREATE_USER_RESPONSE: -3}
-    print_result "/users/ (Create)" "POST" $RESPONSE_STATUS 200
+    CREATE_USER_RESPONSE=$(make_request "POST" "/users/" '{"name": "Test User", "passport_string": "TEST123", "ref_score": 5}')
+    if [ $? -eq 0 ]; then
+        RESPONSE_STATUS=${CREATE_USER_RESPONSE: -3}
+        print_result "/users/ (Create)" "POST" $RESPONSE_STATUS 200
+    else
+        echo -e "${RED}Failed to connect to server${NC}"
+        return 1
+    fi
 
     # Test 2: Get User
-    GET_USER_RESPONSE=$(curl -s -w "%{http_code}" -X GET "$BASE_URL/users/TEST123")
-    RESPONSE_STATUS=${GET_USER_RESPONSE: -3}
-    print_result "/users/TEST123 (Get)" "GET" $RESPONSE_STATUS 200
+    GET_USER_RESPONSE=$(make_request "GET" "/users/TEST123")
+    if [ $? -eq 0 ]; then
+        RESPONSE_STATUS=${GET_USER_RESPONSE: -3}
+        print_result "/users/TEST123 (Get)" "GET" $RESPONSE_STATUS 200
+    else
+        echo -e "${RED}Failed to connect to server${NC}"
+        return 1
+    fi
 
     # Test 3: Get User Risk Score
-    GET_RISK_RESPONSE=$(curl -s -w "%{http_code}" -X GET "$BASE_URL/users/TEST123/risk")
-    RESPONSE_STATUS=${GET_RISK_RESPONSE: -3}
-    print_result "/users/TEST123/risk (Get Risk)" "GET" $RESPONSE_STATUS 200
+    GET_RISK_RESPONSE=$(make_request "GET" "/users/risk/TEST123")
+    if [ $? -eq 0 ]; then
+        RESPONSE_STATUS=${GET_RISK_RESPONSE: -3}
+        print_result "/users/risk/TEST123 (Get Risk)" "GET" $RESPONSE_STATUS 200
+    else
+        echo -e "${RED}Failed to connect to server${NC}"
+        return 1
+    fi
 
     # Test 4: List Users
-    LIST_USERS_RESPONSE=$(curl -s -w "%{http_code}" -X GET "$BASE_URL/users/")
-    RESPONSE_STATUS=${LIST_USERS_RESPONSE: -3}
-    print_result "/users/ (List)" "GET" $RESPONSE_STATUS 200
+    LIST_USERS_RESPONSE=$(make_request "GET" "/users/")
+    if [ $? -eq 0 ]; then
+        RESPONSE_STATUS=${LIST_USERS_RESPONSE: -3}
+        print_result "/users/ (List)" "GET" $RESPONSE_STATUS 200
+    else
+        echo -e "${RED}Failed to connect to server${NC}"
+        return 1
+    fi
 
     # Test 5: Update User
-    UPDATE_USER_RESPONSE=$(curl -s -w "%{http_code}" -X PUT "$BASE_URL/users/TEST123" \
-        -H "Content-Type: application/json" \
-        -d '{"name": "Updated User", "passport_string": "TEST123", "ref_score": 10}')
-    RESPONSE_STATUS=${UPDATE_USER_RESPONSE: -3}
-    print_result "/users/TEST123 (Update)" "PUT" $RESPONSE_STATUS 200
+    UPDATE_USER_RESPONSE=$(make_request "PUT" "/users/TEST123" '{"name": "Updated User", "passport_string": "TEST123", "ref_score": 10}')
+    if [ $? -eq 0 ]; then
+        RESPONSE_STATUS=${UPDATE_USER_RESPONSE: -3}
+        print_result "/users/TEST123 (Update)" "PUT" $RESPONSE_STATUS 200
+    else
+        echo -e "${RED}Failed to connect to server${NC}"
+        return 1
+    fi
 
     # Test 6: Create Company
     echo -e "\n${BLUE}Testing Company Endpoints:${NC}"
@@ -314,4 +353,4 @@ case "$1" in
         ;;
 esac
 
-exit 0
+
