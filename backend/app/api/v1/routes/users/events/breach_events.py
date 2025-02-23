@@ -14,6 +14,20 @@ router = APIRouter(
     }
 )
 
+@router.get("/",
+         response_model=dict,
+         summary="Get all breach events",
+         description="Retrieve all breach events.")
+async def get_all_breach_events():
+    try:
+        events = await BreachEventService.get_all_breach_events()
+        return {"status": "success", "data": events or []}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        Logger.error(f"Error getting all events: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
 @router.post("/",
           response_model=dict,
           summary="Create a new breach event",
@@ -147,9 +161,9 @@ async def delete_breach_event(event_id: str):
            response_model=dict,
            summary="Resolve a breach event",
            description="Mark a breach event as resolved with resolution notes.")
-async def resolve_breach_event(event_id: str, resolution_notes: str):
+async def resolve_breach_event(event_id: str, resolution: dict):
     try:
-        event = await BreachEventService.resolve_breach_event(event_id, resolution_notes)
+        event = await BreachEventService.resolve_breach_event(event_id, resolution.get('resolution_notes', ''))
         if not event:
             raise HTTPException(status_code=404, detail="Breach event not found")
         return {"status": "success", "data": event}

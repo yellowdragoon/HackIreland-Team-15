@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# Color definitions
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m'
@@ -8,7 +7,6 @@ BLUE='\033[0;34m'
 
 BASE_URL="http://localhost:8080/api/v1"
 
-# Function to print test results
 print_result() {
     local endpoint=$1
     local method=$2
@@ -22,7 +20,6 @@ print_result() {
     fi
 }
 
-# Function to make a curl request with timeout and error handling
 make_request() {
     local method=$1
     local endpoint=$2
@@ -44,37 +41,24 @@ make_request() {
     return 0
 }
 
-# Function to cleanup test data
 cleanup_test_data() {
     echo -e "\n${BLUE}Cleaning up test data...${NC}"
-
-    # Delete breach events
     make_request "DELETE" "/breach-events/user/TEST123" > /dev/null
-
-    # Delete breaches
     make_request "DELETE" "/breaches/COMP123" > /dev/null
-
-    # Delete company
     make_request "DELETE" "/companies/COMP123" > /dev/null
-
-    # Delete user
     make_request "DELETE" "/users/TEST123" > /dev/null
-
     echo -e "${GREEN}Cleanup completed${NC}"
 }
 
-# Function to ensure test data exists
 ensure_test_data() {
     echo -e "\n${BLUE}Ensuring test data exists...${NC}"
 
-    # Check if test user exists
     USER_EXISTS=$(make_request "GET" "/users/TEST123")
     if [ $? -eq 0 ] && [ "${USER_EXISTS: -3}" != "200" ]; then
         echo "Creating test user..."
         make_request "POST" "/users/" '{"name": "Test User", "passport_string": "TEST123", "ref_score": 5}' > /dev/null
     fi
 
-    # Check if test company exists
     COMPANY_EXISTS=$(make_request "GET" "/companies/COMP123")
     if [ $? -eq 0 ] && [ "${COMPANY_EXISTS: -3}" != "200" ]; then
         echo "Creating test company..."
@@ -84,7 +68,6 @@ ensure_test_data() {
     echo -e "${GREEN}Test data setup completed${NC}"
 }
 
-# Function to run all tests
 run_tests() {
     echo -e "\n${BLUE}Starting API Tests...${NC}\n"
 

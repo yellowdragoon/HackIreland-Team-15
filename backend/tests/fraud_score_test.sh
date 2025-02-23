@@ -1,18 +1,12 @@
 #!/bin/bash
 
-# Colors for output
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m'
-
-# Base URL for the API
 BASE_URL="http://localhost:8080"
-
-# Test user and company data
 TEST_USER_ID="TEST_FRAUD_123"
 TEST_COMPANY_ID="COMP_FRAUD_123"
 
-# Function to check API response
 check_response() {
     local response_status=$1
     local expected=$2
@@ -27,7 +21,6 @@ check_response() {
     fi
 }
 
-# Setup test data
 echo "Setting up test data..."
 
 # Create test user

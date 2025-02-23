@@ -1,261 +1,265 @@
-'use client';
+"use client";
 
 import { useState, useEffect } from 'react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-
-import { api, User, Company, CompanyBreachType } from '@/lib/api';
+import { api } from '@/lib/api';
 
 export default function DashboardPage() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [breaches, setBreaches] = useState<{[key: string]: CompanyBreachType}>({});
-  const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [searchPassport, setSearchPassport] = useState('');
-  const [userScore, setUserScore] = useState<number | null>(null);
-  const [searchError, setSearchError] = useState<string | null>(null);
+  const [error, setError] = useState('');
+  const [stats, setStats] = useState({
+    totalBreaches: 0,
+    unresolvedBreaches: 0,
+    highRiskUsers: 0
+  });
+  const [recentBreaches, setRecentBreaches] = useState([]);
+  const [unresolved, setUnresolved] = useState([]);
+  const [selectedBreach, setSelectedBreach] = useState(null);
+  const [resolutionNotes, setResolutionNotes] = useState('');
+  const [resolvingBreach, setResolvingBreach] = useState(false);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Get list of companies
-        const companiesList = await api.listCompanies();
-        setCompanies(companiesList);
-
-        // Get breaches for each company
-        const breachesMap: {[key: string]: CompanyBreachType} = {};
-        for (const company of companiesList) {
-          try {
-            const breach = await api.getCompanyBreach(company.id);
-            if (breach) {
-              breachesMap[company.id] = breach;
-            }
-          } catch (e) {
-            // No breach for this company
-          }
-        }
-        setBreaches(breachesMap);
-
-        // Get high impact breaches
-        const highImpact = await api.getHighImpactBreaches(70);
-        console.log('High impact breaches:', highImpact);
-
-      } catch (err) {
-        setError('Failed to fetch dashboard data');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+    loadDashboard();
   }, []);
 
-  const getSeverityColor = (severity: string) => {
-    const colors = {
-      LOW: 'bg-blue-100 text-blue-800',
-      MEDIUM: 'bg-yellow-100 text-yellow-800',
-      HIGH: 'bg-orange-100 text-orange-800',
-      CRITICAL: 'bg-red-100 text-red-800'
-    };
-    return colors[severity as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+  const loadDashboard = async () => {
+    try {
+      // Get unresolved breaches
+      const unresolvedRes = await api.get('/breach-events/unresolved');
+      setUnresolved(unresolvedRes.data || []);
+
+      // Get recent breaches
+      const recentRes = await api.get('/breach-events');
+      setRecentBreaches(recentRes.data || []);
+
+      // Calculate stats
+      setStats({
+        totalBreaches: recentRes.data?.length || 0,
+        unresolvedBreaches: unresolvedRes.data?.length || 0,
+        highRiskUsers: recentRes.data?.filter(b => b.effect_score > 70).length || 0
+      });
+    } catch (err: any) {
+      setError(err.message || 'Failed to load dashboard');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  if (loading) return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
-  if (error) return <Alert variant="destructive"><AlertTitle>Error</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>;
+  const resolveBreachEvent = async (eventId: string) => {
+    try {
+      setResolvingBreach(true);
+      await api.post(`/breach-events/${eventId}/resolve`, {
+        resolution_notes: resolutionNotes || 'Marked as resolved from dashboard'
+      });
+      setSelectedBreach(null);
+      setResolutionNotes('');
+      loadDashboard(); // Refresh data
+    } catch (err: any) {
+      setError(err.message || 'Failed to resolve breach');
+    } finally {
+      setResolvingBreach(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-100 p-8">
+        <div className="max-w-7xl mx-auto">
+          Loading dashboard...
+        </div>
+      </div>
+    );
+  }
+
+  const getSeverityColor = (score: number) => {
+    if (score >= 80) return 'text-red-600';
+    if (score >= 50) return 'text-orange-600';
+    return 'text-yellow-600';
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto space-y-8">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-900">Security Dashboard</h1>
-          <Button variant="outline">Refresh Data</Button>
+    <div className="min-h-screen bg-gray-100 p-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">Breach Monitoring Dashboard</h1>
+          <button
+            onClick={() => loadDashboard()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          >
+            Refresh Data
+          </button>
         </div>
 
-        <Tabs defaultValue="overview" className="w-full">
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="companies">Companies</TabsTrigger>
-            <TabsTrigger value="events">Breach Events</TabsTrigger>
-          </TabsList>
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-md">
+            {error}
+          </div>
+        )}
 
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <Card className="p-6">
-                <h3 className="font-semibold text-lg">Total Companies</h3>
-                <p className="text-3xl font-bold mt-2">{companies.length}</p>
-              </Card>
-              <Card className="p-6">
-                <h3 className="font-semibold text-lg">Active Breaches</h3>
-                <p className="text-3xl font-bold mt-2">{Object.keys(breaches).length}</p>
-              </Card>
-              <Card className="p-6">
-                <h3 className="font-semibold text-lg">High Impact Breaches</h3>
-                <p className="text-3xl font-bold mt-2">
-                  {Object.values(breaches).filter(b => b.effect_score > 70).length}
-                </p>
-              </Card>
-            </div>
-          </TabsContent>
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow p-6 transform hover:scale-105 transition-transform">
+            <h3 className="text-lg font-medium text-gray-900">Total Breaches</h3>
+            <p className="mt-2 text-3xl font-bold">{stats.totalBreaches}</p>
+            <p className="mt-1 text-sm text-gray-500">All reported incidents</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6 transform hover:scale-105 transition-transform">
+            <h3 className="text-lg font-medium text-gray-900">Unresolved Breaches</h3>
+            <p className="mt-2 text-3xl font-bold text-red-600">{stats.unresolvedBreaches}</p>
+            <p className="mt-1 text-sm text-gray-500">Require immediate attention</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6 transform hover:scale-105 transition-transform">
+            <h3 className="text-lg font-medium text-gray-900">High Risk Users</h3>
+            <p className="mt-2 text-3xl font-bold text-orange-600">{stats.highRiskUsers}</p>
+            <p className="mt-1 text-sm text-gray-500">Users with risk score > 70</p>
+          </div>
+        </div>
 
-          <TabsContent value="users" className="space-y-6">
-            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md mb-4">
-              <p className="text-yellow-800">Select a company first to view its user breaches</p>
-            </div>
-            {selectedCompany && (
-              <Card>
-                <div className="p-4 border-b">
-                  <h3 className="text-lg font-semibold">
-                    User Risk Assessment
-                  </h3>
-                  <div className="mt-2 space-y-4">
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="Enter passport number"
-                        className="flex-1 p-2 border rounded"
-                        value={searchPassport}
-                        onChange={(e) => {
-                          setSearchPassport(e.target.value);
-                          setSearchError(null);
-                          setUserScore(null);
-                        }}
-                      />
-                      <Button 
-                        onClick={async () => {
-                          try {
-                            setSearchError(null);
-                            const response = await api.getUserScore(searchPassport);
-                            setUserScore(response.data.ref_score);
-                          } catch (err) {
-                            setSearchError('User not found or error checking score');
-                            setUserScore(null);
-                          }
-                        }}
-                        disabled={!searchPassport.trim()}
-                      >
-                        Check Score
-                      </Button>
-                    </div>
-                    
-                    {searchError && (
-                      <div className="text-red-600 text-sm">{searchError}</div>
-                    )}
-                    
-                    {userScore !== null && (
-                      <div className="p-4 border rounded">
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium">Risk Score:</span>
-                          <Badge 
-                            variant={userScore > 70 ? 'destructive' : userScore > 30 ? 'default' : 'secondary'}
-                          >
-                            {userScore}
-                          </Badge>
-                        </div>
-                        {userScore > 70 && (
-                          <div className="mt-2 text-sm text-red-600">
-                            High risk user detected! Consider reviewing their activity.
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </Card>
-            )}
-          </TabsContent>
-
-          <TabsContent value="companies" className="space-y-6">
-            <Card>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Industry</TableHead>
-                    <TableHead>Current Breach</TableHead>
-                    <TableHead>Effect Score</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {companies.map((company) => (
-                    <TableRow key={company.id}>
-                      <TableCell>{company.name}</TableCell>
-                      <TableCell>{company.industry}</TableCell>
-                      <TableCell>
-                        {breaches[company.id] ? (
-                          <Badge variant={breaches[company.id].effect_score > 70 ? 'destructive' : 'default'}>
-                            {breaches[company.id].breach_type}
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary">None</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {breaches[company.id] ? breaches[company.id].effect_score : '-'}
-                      </TableCell>
-                      <TableCell>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => setSelectedCompany(company.id)}
+        {/* Unresolved Breaches */}
+        <div className="bg-white rounded-lg shadow mb-8">
+          <div className="p-6">
+            <h2 className="text-xl font-bold mb-4">Unresolved Breaches</h2>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead>
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Score</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {unresolved.map((breach: any) => (
+                    <tr key={breach._id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap font-medium">{breach.user_id}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                          {breach.breach_type}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`font-semibold ${getSeverityColor(breach.effect_score)}`}>
+                          {breach.effect_score}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">{breach.description}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          onClick={() => setSelectedBreach(breach)}
+                          className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                         >
-                          Check Users
-                        </Button>
-                      </TableCell>
-                    </TableRow>
+                          Resolve
+                        </button>
+                      </td>
+                    </tr>
                   ))}
-                </TableBody>
-              </Table>
-            </Card>
-          </TabsContent>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
 
-          <TabsContent value="events" className="space-y-6">
-            <Card>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Severity</TableHead>
-                    <TableHead>Effect Score</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {breachEvents.map((event) => (
-                    <TableRow key={event._id}>
-                      <TableCell>{event.breach_type}</TableCell>
-                      <TableCell>
-                        <Badge className={getSeverityColor(event.severity)}>
-                          {event.severity}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{event.effect_score}</TableCell>
-                      <TableCell>
-                        <Badge variant={event.status === 'OPEN' ? 'destructive' : 'default'}>
-                          {event.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="space-x-2">
-                        <Button variant="ghost" size="sm">View</Button>
-                        {event.status === 'OPEN' && (
-                          <Button variant="outline" size="sm">Resolve</Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
+        {/* Recent Activity */}
+        <div className="bg-white rounded-lg shadow">
+          <div className="p-6">
+            <h2 className="text-xl font-bold mb-4">Recent Activity</h2>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead>
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Score</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {recentBreaches.map((breach: any) => (
+                    <tr key={breach._id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {formatDate(breach.timestamp)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap font-medium">{breach.user_id}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                          {breach.breach_type}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`font-semibold ${getSeverityColor(breach.effect_score)}`}>
+                          {breach.effect_score}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                          breach.resolved
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {breach.resolved ? 'Resolved' : 'Unresolved'}
+                        </span>
+                      </td>
+                    </tr>
                   ))}
-                </TableBody>
-              </Table>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* Resolution Modal */}
+        {selectedBreach && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg max-w-lg w-full p-6">
+              <h3 className="text-lg font-bold mb-4">Resolve Breach</h3>
+              <div className="mb-4">
+                <p className="text-sm text-gray-600 mb-2">User ID: {selectedBreach.user_id}</p>
+                <p className="text-sm text-gray-600 mb-2">Type: {selectedBreach.breach_type}</p>
+                <p className="text-sm text-gray-600 mb-4">Description: {selectedBreach.description}</p>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Resolution Notes
+                </label>
+                <textarea
+                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={4}
+                  value={resolutionNotes}
+                  onChange={(e) => setResolutionNotes(e.target.value)}
+                  placeholder="Enter resolution details..."
+                />
+              </div>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => {
+                    setSelectedBreach(null);
+                    setResolutionNotes('');
+                  }}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => resolveBreachEvent(selectedBreach._id)}
+                  disabled={resolvingBreach}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-blue-300 transition-colors"
+                >
+                  {resolvingBreach ? 'Resolving...' : 'Confirm Resolution'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

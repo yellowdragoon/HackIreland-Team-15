@@ -11,6 +11,17 @@ class BreachEventService:
     collection_name = "breach_events"
     
     @classmethod
+    async def get_all_breach_events(cls) -> List[Dict[str, Any]]:
+        try:
+            events = await MongoDB.db[cls.collection_name].find().sort('timestamp', -1).to_list(None)
+            if not events:
+                return []
+            return [BreachEvent.model_validate(event).model_dump(by_alias=True) for event in events]
+        except Exception as e:
+            Logger.error(f"Error getting all events: {str(e)}")
+            raise e
+    
+    @classmethod
     async def create_breach_event(cls, event: BreachEvent) -> Optional[Dict[str, Any]]:
         try:
             # Try to get the company's breach record for the effect score
