@@ -436,17 +436,36 @@ export default function DashboardPage() {
                 <h4 className="font-medium mb-2">Device History</h4>
                 <div className="bg-gray-50 rounded-lg p-4">
                   {userDetails.devices?.length > 0 ? (
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 gap-4">
                       {userDetails.devices.map((device: any, index: number) => (
-                        <div key={index} className="bg-white p-3 rounded shadow-sm">
-                          <p className="text-sm font-medium">Device {index + 1}</p>
-                          <p className="text-xs text-gray-600">IP: {device.ip_address}</p>
-                          <p className="text-xs text-gray-600">Last Used: {formatDate(device.last_used)}</p>
-                          <p className="text-xs text-gray-600">Risk Level:
-                            <span className={`font-semibold ${getSeverityColor(device.risk_score)}`}>
-                              {device.risk_score}
-                            </span>
-                          </p>
+                        <div 
+                          key={index} 
+                          className={`bg-white p-4 rounded-lg shadow-sm ${index === 1 ? 'border-2 border-orange-400' : ''}`}
+                        >
+                          <div className="flex justify-between items-center mb-3">
+                            <p className="text-sm font-medium">Device {index + 1}</p>
+                            {index === 1 && (
+                              <span className="px-2 py-1 text-xs font-semibold bg-orange-100 text-orange-700 rounded-full">
+                                Potential AI Agent
+                              </span>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <p className="text-sm">
+                              <span className="text-gray-600">IP:</span>{' '}
+                              <span className="font-medium">{device.ip_address}</span>
+                            </p>
+                            <p className="text-sm">
+                              <span className="text-gray-600">Last Used:</span>{' '}
+                              <span className="font-medium">{formatDate(device.last_used)}</span>
+                            </p>
+                            <p className="text-sm">
+                              <span className="text-gray-600">Risk Level:</span>{' '}
+                              <span className={`font-semibold ${getSeverityColor(device.risk_score)}`}>
+                                {device.risk_score}
+                              </span>
+                            </p>
+                          </div>
                         </div>
                       ))}
                     </div>
