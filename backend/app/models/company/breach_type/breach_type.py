@@ -15,7 +15,7 @@ class CompanyBreachType(BaseModel):
     breach_type: BreachTypeEnum
     effect_score: int
     description: str
-    timestamp: datetime
+    timestamp: datetime = datetime.now()
 
     class Config:
         json_schema_extra = {

@@ -6,7 +6,7 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 # Base URL for the API
-BASE_URL="http://localhost:8000"
+BASE_URL="http://localhost:8080"
 
 # Test user and company data
 TEST_USER_ID="TEST_FRAUD_123"
@@ -17,7 +17,7 @@ check_response() {
     local status=$1
     local expected=$2
     local message=$3
-    
+
     if [ $status -eq $expected ]; then
         echo -e "${GREEN}✓${NC} $message - Success (Status: $status)"
         return 0
