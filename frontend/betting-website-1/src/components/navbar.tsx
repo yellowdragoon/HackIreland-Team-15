@@ -1,18 +1,25 @@
 import React from 'react';
 import Link from 'next/link';
 import { AppBar, Toolbar, Typography, Button, IconButton, Box } from '@mui/material';
-import MenuIcon from '@mui/icons-material/Menu';
+import { AccountBalance } from '@mui/icons-material';
+import { useUser } from '@/context/UserContext';
 
 const Navbar = () => {
+  const { userName } = useUser();
   return (
     <AppBar position="static">
       <Toolbar>
         <IconButton edge="start" color="inherit" aria-label="menu" sx={{ mr: 2 }}>
-          <MenuIcon />
+          <AccountBalance />
         </IconButton>
         <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
           Bevolut
         </Typography>
+        {userName && (
+          <Typography variant="body1" sx={{ marginRight: 2 }}>
+            Hi, {userName}!
+          </Typography>
+        )}
         <Box sx={{ display: 'flex', gap: 2 }}>
           <Link href="/" passHref>
             <Button color="inherit">Home</Button>

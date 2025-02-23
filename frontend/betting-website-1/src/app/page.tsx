@@ -1,23 +1,16 @@
 'use client'
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Container, Typography, Box, TextField, Button } from '@mui/material';
 import Navbar from '@/components/navbar';
-// import { headers } from 'next/headers'  
+import { useUser } from '@/context/UserContext';
+import hashFile from '@/lib/hash';
+import { redirect } from 'next/navigation';
 
 export default function Home() {
   const [name, setName] = useState('');
   const [passportPhoto, setPassportPhoto] = useState<File>(null);
-  const [ip, setIp] = useState<string>("");
-
-  // useEffect(() => {
-  //   async function fetchData() {
-  //     const header = await headers();
-  //     const headerIp = (header.get('x-forwarded-for') ?? '127.0.0.1').split(',')[0]
-  //     setIp(headerIp);
-  //   }
-  //   fetchData();
-  // }, []);
+  const { setUserName, setUserPassport } = useUser();
 
   const handleFileChange = (e) => {
     setPassportPhoto(e.target.files[0]);
@@ -28,19 +21,16 @@ export default function Home() {
     console.log('Name:', name);
     console.log('Passport Photo:', passportPhoto);
 
-    const formData = new FormData();
-    formData.append('name', name);
-    formData.append('passportPhoto', "testString");
-    // formData.append('ip', ip);
-    console.log(formData);
+    console.log(await hashFile(passportPhoto));
+
     try{
+      const photoHash = await hashFile(passportPhoto);
       const response = await fetch('/api/signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // Add any other necessary headers
         },
-        body: JSON.stringify({'name': name, 'passportPhoto': 'testString'}),
+        body: JSON.stringify({'name': name, 'passport_string': photoHash}),
       });
 
       if (!response.ok) {
@@ -53,9 +43,14 @@ export default function Home() {
       const data = await response.json();
       console.log('Success:', data);
 
+      setUserName(name);
+      setUserPassport(photoHash);
+
     } catch (err) {
       console.error('Error:', err);
     }
+
+    redirect('/transfer');
   };
   return (
     <>

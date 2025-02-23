@@ -1,20 +1,20 @@
 'use client'
 
 import React, { useState } from 'react';
-import { Container, Typography, Box, TextField, Button, Alert, AppBar } from '@mui/material';
+import { Container, Typography, Box, TextField, Button, Alert } from '@mui/material';
 import Navbar from '@/components/navbar';
+import { useUser } from '@/context/UserContext';
 
 const TransferPage = () => {
-  // Example initial balance
-  const [balance, setBalance] = useState<number>(1000);
+  const [balance, setBalance] = useState<number>(100000);
   const [recipient, setRecipient] = useState<string>('');
   const [transferAmount, setTransferAmount] = useState<number>(0);
   const [message, setMessage] = useState<string | null>(null);
+  const { userName, userPassport } = useUser();
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // Validate that transfer amount is positive and doesn't exceed available balance
     if (transferAmount <= 0) {
       setMessage('Transfer amount must be greater than zero.');
       return;
@@ -24,15 +24,66 @@ const TransferPage = () => {
       return;
     }
 
-    const formData = new FormData();
+    try{
+      const response = await fetch('/api/transfer', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({'name': userName, 'passport_string': userPassport, 'amount': transferAmount}),
+      });
 
-    // Process the transfer (update balance and display a success message)
-    setBalance(prevBalance => prevBalance - transferAmount);
-    setMessage(`Successfully sent $${transferAmount.toFixed(2)} to ${recipient}.`);
+      if (!response.ok) {
+        throw new Error('Failed to sign up');
+      }
 
-    // Clear the form inputs
+      console.log(response);
+      console.log(response.body);
+
+      const { ref_score } = await response.json();
+      console.log('Success:', ref_score);
+
+      if(parseInt(ref_score) > 0){
+        console.log("FRAUD ALERT");
+        throw new Error("FRAUDSTER DETECTED");
+      }
+
+      setBalance(prevBalance => prevBalance - transferAmount);
+      setMessage(`Successfully sent $${transferAmount.toFixed(2)} to ${recipient}.`);
+
+    } catch (err) {
+      console.error('Error:', err);
+    }
+
     setRecipient('');
     setTransferAmount(0);
+  };
+
+  const handleCommitFraud = async () => {
+    console.log('Commit fraud button clicked');
+
+    try{
+      const response = await fetch('/api/breach', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({'user_id': userName, 'company_id': 'Stripe', 'breach_type_id': '123', 'description': 'Credit fraud', 'severity': 10}),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to sign up');
+      }
+
+      console.log(response);
+      console.log(response.body);
+
+      const { ref_score } = await response.json();
+      console.log('Success:', ref_score);
+    } catch(err){
+
+    }
+    setMessage('Fraud committed. Please contact support for further actions.');
   };
 
   return (
@@ -79,6 +130,12 @@ const TransferPage = () => {
           Send Money
         </Button>
       </Box>
+       {/* Fraud button */}
+       <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+          <Button variant="contained" color="error" onClick={handleCommitFraud}>
+            Commit Fraud
+          </Button>
+        </Box>
     </Container>
     </>
   );
