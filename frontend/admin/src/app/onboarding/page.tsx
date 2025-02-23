@@ -24,41 +24,35 @@ export default function OnboardingPage() {
     id: `COMP${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
     name: '',
     industry: '',
-    breach: null,
   });
 
   // Breach policies
-  const [breachPolicies, setBreachPolicies] = useState<BreachType[]>([
+  const [breachPolicies, setBreachPolicies] = useState<CompanyBreachType[]>([
     {
-      company_id: '',
       breach_type: 'SUSPICIOUS_ACTIVITY',
       description: 'Suspicious login attempts or unusual account activity',
       effect_score: 30,
       timestamp: new Date().toISOString(),
     },
     {
-      company_id: '',
       breach_type: 'VIOLATING_TERMS',
       description: 'Violation of terms of service or user agreements',
       effect_score: 50,
       timestamp: new Date().toISOString(),
     },
     {
-      company_id: '',
       breach_type: 'FRAUD',
       description: 'Fraudulent activities or transactions',
       effect_score: 75,
       timestamp: new Date().toISOString(),
     },
     {
-      company_id: '',
       breach_type: 'ILLEGAL_ACTIVITY',
       description: 'Illegal activities detected',
       effect_score: 90,
       timestamp: new Date().toISOString(),
     },
     {
-      company_id: '',
       breach_type: 'DATA_LEAK',
       description: 'Unauthorized data access or sharing',
       effect_score: 85,
@@ -97,8 +91,9 @@ export default function OnboardingPage() {
     setError('');
 
     try {
+      // Create breaches one by one for the company
       await Promise.all(
-        breachPolicies.map(policy => api.createBreachType(policy))
+        breachPolicies.map(policy => api.createBreach(company.id, policy))
       );
       router.push('/dashboard');
     } catch (err) {
