@@ -10,7 +10,8 @@ const TransferPage = () => {
   const [recipient, setRecipient] = useState<string>('');
   const [transferAmount, setTransferAmount] = useState<number>(0);
   const [message, setMessage] = useState<string | null>(null);
-  const { userName, userPassport } = useUser();
+  const [fraudMessage, setFraudMessage] = useState<string | null>(null);
+  const { userName, userPassport, userId } = useUser();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -45,7 +46,9 @@ const TransferPage = () => {
 
       if(parseInt(ref_score) > 0){
         console.log("FRAUD ALERT");
-        throw new Error("FRAUDSTER DETECTED");
+        setFraudMessage('Warning: Fraudster detected! Payment blocked');
+        // throw new Error("FRAUDSTER DETECTED");
+        return;
       }
 
       setBalance(prevBalance => prevBalance - transferAmount);
@@ -68,7 +71,7 @@ const TransferPage = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({'user_id': userName, 'company_id': 'Stripe', 'breach_type_id': '123', 'description': 'Credit fraud', 'severity': 10}),
+        body: JSON.stringify({'user_id': userId, 'company_id': 'Stripe', 'breach_type': 'FRAUD', 'description': 'Credit fraud', 'severity': 'CRITICAL', 'status': 'OPEN'}),
       });
 
       if (!response.ok) {
@@ -83,20 +86,25 @@ const TransferPage = () => {
     } catch(err){
 
     }
-    setMessage('Fraud committed. Please contact support for further actions.');
+    setFraudMessage('Fraud committed. Please contact support for further actions.');
   };
 
   return (
     <>
     <Navbar />
-    <Container maxWidth="sm" sx={{ mt: 4 }}>
+    <Container maxWidth="sm" sx={{ mt: 20 }}>
       <Typography variant="h4" align="center" gutterBottom>
         Transfer Money
       </Typography>
       <Typography variant="h6" align="center" gutterBottom>
         Current Balance: ${balance.toFixed(2)}
       </Typography>
-      {message && (
+      {fraudMessage && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {fraudMessage}
+        </Alert>
+      )}
+      {message && !fraudMessage && (
         <Alert severity="info" sx={{ mb: 2 }}>
           {message}
         </Alert>

@@ -16,9 +16,9 @@ export async function POST(request: Request) {
     body: JSON.stringify(dataToSend)
   });
 
-  const {user_id, name: externalName, ref_score} = await externalApiResponse.json();
+  const {'data': {_id}, name: externalName, ref_score} = await externalApiResponse.json();
 
-  console.log(user_id, externalName, ref_score);
+  console.log(_id, externalName, ref_score);
   
-  return NextResponse.json({user_id, externalName, ref_score});
+  return NextResponse.json({_id, externalName, ref_score});
 }

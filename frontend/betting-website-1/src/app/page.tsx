@@ -1,16 +1,17 @@
 'use client'
 
 import React, { useState } from 'react';
-import { Container, Typography, Box, TextField, Button } from '@mui/material';
+import { Container, Typography, Box, TextField, Button, Card, Paper } from '@mui/material';
 import Navbar from '@/components/navbar';
 import { useUser } from '@/context/UserContext';
 import hashFile from '@/lib/hash';
 import { redirect } from 'next/navigation';
+import { responsiveProperty } from '@mui/material/styles/cssUtils';
 
 export default function Home() {
   const [name, setName] = useState('');
   const [passportPhoto, setPassportPhoto] = useState<File>(null);
-  const { setUserName, setUserPassport } = useUser();
+  const { setUserName, setUserPassport, setUserId } = useUser();
 
   const handleFileChange = (e) => {
     setPassportPhoto(e.target.files[0]);
@@ -40,9 +41,12 @@ export default function Home() {
       console.log(response);
       console.log(response.body);
 
-      const data = await response.json();
-      console.log('Success:', data);
+      // const j = await response.json();
+      // console.log(j);
 
+      const { _id } = await response.json();
+      console.log('Success:', _id);
+      setUserId(_id);
       setUserName(name);
       setUserPassport(photoHash);
 
@@ -54,47 +58,75 @@ export default function Home() {
   };
   return (
     <>
-    <Navbar />
-    <Container maxWidth="sm" sx={{marginTop: "75px"}}>
-    <Typography variant="h4" align="center" gutterBottom>
-      Sign Up
-    </Typography>
-    <Box
-      component="form"
-      onSubmit={handleSubmit}
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 2,
-        mt: 3,
-      }}
-    >
-      <TextField
-        label="Name"
-        variant="outlined"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        required
-      />
-      <Button variant="contained" component="label">
-        Upload Passport Photo
-        <input
-          type="file"
-          hidden
-          onChange={handleFileChange}
-          accept="image/*"
-        />
-      </Button>
-      {passportPhoto && (
-        <Typography variant="body2">
-          Selected file: {passportPhoto.name}
-        </Typography>
-      )}
-      <Button type="submit" variant="contained" color="primary">
-        Complete Sign Up
-      </Button>
-    </Box>
-    </Container>
+<Navbar />
+      <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+        <Box
+          sx={{
+            flex: 1,
+            p: 4,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+          }}
+        >
+          <Typography variant="h4" gutterBottom>
+            Sign Up
+          </Typography>
+          <Box
+            component="form"
+            onSubmit={handleSubmit}
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 2,
+            }}
+          >
+            <TextField
+              label="Name"
+              variant="outlined"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+            <Button variant="contained" component="label">
+              Upload Passport Photo
+              <input
+                type="file"
+                hidden
+                onChange={handleFileChange}
+                accept="image/*"
+              />
+            </Button>
+            {passportPhoto && (
+              <Typography variant="body2">
+                Selected file: {passportPhoto.name}
+              </Typography>
+            )}
+            <Button type="submit" variant="contained" color="primary">
+              Complete Sign Up
+            </Button>
+          </Box>
+        </Box>
+
+        {/* Right Side - Mission Statement */}
+        <Box
+          sx={{
+            flex: 1,
+            position: 'relative',
+            backgroundColor: '#1976d2',
+            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            p: 4,
+            overflow: 'hidden',
+          }}
+        >
+          <Typography variant="h3" align="center" sx={{ zIndex: 1, px: 2 }}>
+            Our Mission: Empowering the Future of Finance
+          </Typography>
+        </Box>
+      </Box>
   </>
   );
 }

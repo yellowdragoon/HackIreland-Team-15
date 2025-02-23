@@ -7,6 +7,8 @@ interface UserContextType {
   setUserName: (name: string) => void;
   userPassport: string;
   setUserPassport: (password: string) => void;
+  userId: string;
+  setUserId: (id: string) => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -14,9 +16,10 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [userName, setUserName] = useState('');
   const [userPassport, setUserPassport] = useState('');
+  const [userId, setUserId] = useState('');
 
   return (
-    <UserContext.Provider value={{ userName, setUserName, userPassport, setUserPassport }}>
+    <UserContext.Provider value={{ userName, setUserName, userPassport, setUserPassport, userId, setUserId }}>
       {children}
     </UserContext.Provider>
   );

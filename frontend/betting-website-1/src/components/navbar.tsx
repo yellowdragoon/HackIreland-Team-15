@@ -7,7 +7,7 @@ import { useUser } from '@/context/UserContext';
 const Navbar = () => {
   const { userName } = useUser();
   return (
-    <AppBar position="static">
+    <AppBar position="fixed">
       <Toolbar>
         <IconButton edge="start" color="inherit" aria-label="menu" sx={{ mr: 2 }}>
           <AccountBalance />
@@ -27,7 +27,7 @@ const Navbar = () => {
           <Link href="/transfer" passHref>
             <Button color="inherit">Transfer</Button>
           </Link>
-          <Link href="/account" passHref>
+          <Link href="/transfer" passHref>
             <Button color="inherit">Account</Button>
           </Link>
         </Box>
