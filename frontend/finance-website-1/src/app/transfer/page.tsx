@@ -8,7 +8,7 @@ import { useUser } from '@/context/UserContext';
 const TransferPage = () => {
   const [balance, setBalance] = useState<number>(100000);
   const [recipient, setRecipient] = useState<string>('');
-  const [transferAmount, setTransferAmount] = useState<number>(0);
+  const [transferAmount, setTransferAmount] = useState<number>(1000);
   const [message, setMessage] = useState<string | null>(null);
   const [fraudMessage, setFraudMessage] = useState<string | null>(null);
   const { userName, userPassport, userId } = useUser();
@@ -35,7 +35,7 @@ const TransferPage = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to sign up');
+        throw new Error('Failed to transfer');
       }
 
       console.log(response);
