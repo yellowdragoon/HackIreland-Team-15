@@ -19,7 +19,7 @@ class StatusEnum(str, Enum):
 class BreachEvent(BaseModel):
     id: Optional[Any] = Field(None, alias='_id')
     user_id: str
-    company_id: str
+    company_id: Optional[str] = None
     breach_type: BreachTypeEnum
     severity: SeverityEnum
     status: StatusEnum

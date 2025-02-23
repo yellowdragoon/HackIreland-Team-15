@@ -41,9 +41,12 @@ export interface CompanyBreachType {
 const handleResponse = async (response: Response) => {
   if (!response.ok) {
     const error = await response.text();
+    console.error('API Error:', error);
     throw new Error(error || 'API request failed');
   }
-  return response.json();
+  const data = await response.json();
+  console.log('API Response:', data);
+  return data;
 };
 
 export const api = {

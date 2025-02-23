@@ -22,9 +22,12 @@ export default function DashboardPage() {
   const [showCreateEvent, setShowCreateEvent] = useState(false);
   const [newEvent, setNewEvent] = useState({
     user_id: '',
+    company_id: '98848ed4-4b7b-43aa-971a-1f71d12d2475',
     breach_type: 'SUSPICIOUS_ACTIVITY',
     effect_score: 50,
-    description: ''
+    severity: 'HIGH',
+    description: '',
+    status: "OPEN"
   });
 
   useEffect(() => {
@@ -36,47 +39,48 @@ export default function DashboardPage() {
       setLoading(true);
       // Get unresolved breaches
       const unresolvedRes = await api.get('/breach-events/unresolved');
-      setUnresolved(unresolvedRes.data || []);
+      setUnresolved(unresolvedRes.data?.data || []);
 
       // Get recent breaches
       const recentRes = await api.get('/breach-events');
-      setRecentBreaches(recentRes.data || []);
+      setRecentBreaches(recentRes.data?.data || []);
 
       // Get users
       const usersRes = await api.get('/users');
       console.log('Users response:', usersRes); // Debug log
-      
-      if (usersRes?.data?.data) { // Note the nested .data access
-        // Fetch risk scores for each user
-        const usersWithScores = await Promise.all(
-          usersRes.data.data.map(async (user: any) => {
-            try {
-              const scoreRes = await api.get(`/users/score/${user.passport_string}`);
-              return {
-                ...user,
-                ref_score: scoreRes?.data?.data?.ref_score || user.ref_score || 0
-              };
-            } catch (e) {
-              console.error(`Failed to get score for user ${user.passport_string}:`, e);
-              return {
-                ...user,
-                ref_score: user.ref_score || 0
-              };
-            }
-          })
-        );
-        console.log('Users with scores:', usersWithScores); // Debug log
-        setUsers(usersWithScores);
 
-        // Update stats with high risk users
-        setStats({
-          totalBreaches: recentRes.data?.length || 0,
-          unresolvedBreaches: unresolvedRes.data?.length || 0,
-          highRiskUsers: usersWithScores.filter((u: any) => u.ref_score >= 70).length || 0
-        });
-      }
+      const users = usersRes?.data || [];
+      console.log('Users:', users); // Debug log
+
+      // Fetch risk scores for each user
+      const usersWithScores = await Promise.all(
+        users.map(async (user: any) => {
+          try {
+            const scoreRes = await api.get(`/users/score/${user.passport_string}`);
+            return {
+              ...user,
+              ref_score: scoreRes?.data?.ref_score || user.ref_score || 0
+            };
+          } catch (e) {
+            console.error(`Failed to get score for user ${user.passport_string}:`, e);
+            return {
+              ...user,
+              ref_score: user.ref_score || 0
+            };
+          }
+        })
+      );
+      console.log('Users with scores:', usersWithScores); // Debug log
+      setUsers(usersWithScores || []);
+
+      // Update stats with high risk users
+      setStats({
+        totalBreaches: recentRes.data?.data?.length || 0,
+        unresolvedBreaches: unresolvedRes.data?.data?.length || 0,
+        highRiskUsers: usersWithScores.filter((u: any) => u.ref_score >= 70).length || 0
+      });
     } catch (err: any) {
-      console.error('Dashboard loading error:', err); // Debug log
+      console.error('Dashboard loading error:', err);
       setError(err.message || 'Failed to load dashboard');
     } finally {
       setLoading(false);
@@ -90,9 +94,7 @@ export default function DashboardPage() {
     }
     try {
       setResolvingBreach(true);
-      await api.post(`/breach-events/${eventId}/resolve`, {
-        resolution_notes: resolutionNotes || 'Marked as resolved from dashboard'
-      });
+      await api.post(`/breach-events/${eventId}/resolve`);
       setSelectedBreach(null);
       setResolutionNotes('');
       loadDashboard(); // Refresh data
@@ -336,7 +338,7 @@ export default function DashboardPage() {
                   ✕
                 </button>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div>
                   <h4 className="font-medium mb-2">User Information</h4>
@@ -365,7 +367,7 @@ export default function DashboardPage() {
                           <p className="text-sm font-medium">Device {index + 1}</p>
                           <p className="text-xs text-gray-600">IP: {device.ip_address}</p>
                           <p className="text-xs text-gray-600">Last Used: {formatDate(device.last_used)}</p>
-                          <p className="text-xs text-gray-600">Risk Level: 
+                          <p className="text-xs text-gray-600">Risk Level:
                             <span className={`font-semibold ${getSeverityColor(device.risk_score)}`}>
                               {device.risk_score}
                             </span>
@@ -395,7 +397,7 @@ export default function DashboardPage() {
                   ✕
                 </button>
               </div>
-              
+
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -478,7 +480,15 @@ export default function DashboardPage() {
                 <button
                   onClick={async () => {
                     try {
-                      await api.post('/breach-events/manual', newEvent);
+                      const eventData = {
+                        user_id: newEvent.user_id,
+                        breach_type: newEvent.breach_type,
+                        effect_score: newEvent.effect_score,
+                        description: newEvent.description,
+                        severity: newEvent.effect_score >= 70 ? 'HIGH' : newEvent.effect_score >= 40 ? 'MEDIUM' : 'LOW',
+                        status: 'OPEN'
+                      };
+                      await api.post('/breach-events/manual', eventData);
                       setShowCreateEvent(false);
                       setNewEvent({
                         user_id: '',
@@ -488,6 +498,7 @@ export default function DashboardPage() {
                       });
                       loadDashboard();
                     } catch (err) {
+                      console.error('Failed to create event:', err);
                       setError('Failed to create event');
                     }
                   }}
