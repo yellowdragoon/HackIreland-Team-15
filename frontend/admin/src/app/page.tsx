@@ -15,7 +15,7 @@ export default function Home() {
           <div className="flex justify-between h-16 items-center">
             <div className="flex items-center">
               <FiShield className="h-8 w-8 text-blue-500" />
-              <span className="ml-2 text-xl font-bold">TrustGuard</span>
+              <span className="ml-2 text-xl font-bold">Nexus</span>
             </div>
             <div className="flex items-center space-x-4">
               <button onClick={() => router.push('/login')} className="text-sm font-medium hover:text-blue-400 transition-colors">
