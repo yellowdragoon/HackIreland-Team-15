@@ -10,4 +10,4 @@ class BreachTypeEnum(str, Enum):
 class CompanyBreachType(BaseModel):
     name: BreachTypeEnum
     effect: int
-    description: Optional[str] = None
+    description: Optional[str] = None 

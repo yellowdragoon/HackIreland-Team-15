@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from app.services.companies.breach_type.breach_type_service import CompanyBreachService
 from app.models.company.breach_type.breach_type import CompanyBreachType, BreachTypeEnum
+from app.services.companies.company_service import CompanyService
 from typing import List
 
 router = APIRouter(

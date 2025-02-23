@@ -5,9 +5,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.routes.users.users import router as user_router
 from app.api.v1.routes.companies.companies import router as company_router
 from app.api.v1.routes.companies.breach_types import router as breach_router
+from app.api.v1.routes.users.info.user_info import router as user_info_router
 from app.utils.logger.logger import Logger
-from app.db.db import get_db
-import os
+from app.core.db.db import get_db
 from app.core.middleware import ErrorHandlingMiddleware
 
 load_dotenv()
@@ -34,11 +34,12 @@ app.add_middleware(ErrorHandlingMiddleware)
 app.include_router(user_router, prefix="/api/v1")
 app.include_router(company_router, prefix="/api/v1")
 app.include_router(breach_router, prefix="/api/v1")
+app.include_router(user_info_router, prefix="/api/v1")
 
 @app.get('/')
 async def read_root():
     Logger.info('Root endpoint accessed')
-    from app.db.db import MongoDB
+    from app.core.db import MongoDB
     if MongoDB.client:
         try:
             await MongoDB.client.admin.command('ping')
@@ -52,7 +53,7 @@ async def read_root():
 
 @app.get('/health')
 async def health_check():
-    from app.db.db import MongoDB
+    from app.core.db import MongoDB
     if MongoDB.client:
         try:
             await MongoDB.client.admin.command('ping')

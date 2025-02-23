@@ -1,8 +1,10 @@
-from app.models.company.company import Company, CompanyBreachType, BreachTypeEnum
+from app.models.company.company import Company
+from app.models.company.breach_type.breach_type import CompanyBreachType, BreachTypeEnum
 from app.utils.logger.logger import Logger
-from app.db.db import MongoDB
+from app.core.db.db import MongoDB
 from typing import Optional, List
 from bson import ObjectId
+from app.services.companies.company_service import CompanyService
 
 class CompanyBreachService:
     collection_name = "company_breaches"
