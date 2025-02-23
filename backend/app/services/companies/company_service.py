@@ -10,7 +10,7 @@ class CompanyService:
     @classmethod
     async def check_if_record_exists(cls, company_id: str) -> bool:
         try:
-            company = await MongoDB.db[cls.collection_name].find_one({'_id': ObjectId(company_id)})
+            company = await MongoDB.db[cls.collection_name].find_one({'id': company_id})
             return company is not None
         except Exception as e:
             Logger.error(f'Error checking if company exists: {str(e)}')
@@ -19,33 +19,54 @@ class CompanyService:
     @classmethod
     async def create_company(cls, company: Company):
         try:
+            # Check if company already exists
+            existing_company = await cls.get_company(company.id)
+            if existing_company:
+                return existing_company
+
+            # Create new company
             company_dict = company.model_dump()
-            if await cls.check_if_record_exists(company.id):
-                return await cls.get_company(company.id)
             result = await MongoDB.db[cls.collection_name].insert_one(company_dict)
+            
+            # Get created company
             created_company = await MongoDB.db[cls.collection_name].find_one(
                 {'_id': result.inserted_id}
             )
-            created_company['_id'] = str(created_company['_id'])
-            return created_company
+            if not created_company:
+                return None
+
+            # Convert ObjectId to string
+            if '_id' in created_company:
+                created_company['_id'] = str(created_company['_id'])
+
+            return Company.model_validate(created_company)
         except Exception as e:
             Logger.error(f'Error creating company: {str(e)}')
             return None
 
-    async def get_company(self, company_id: str):
+    @classmethod
+    async def get_company(cls, company_id: str):
         try:
-            company = await MongoDB.db[self.collection_name].find_one(
-                {'_id': ObjectId(company_id)}
+            company_data = await MongoDB.db[cls.collection_name].find_one(
+                {'id': company_id}
             )
-            return Company.model_validate(company)
+            if not company_data:
+                return None
+
+            # Convert ObjectId to string
+            if '_id' in company_data:
+                company_data['_id'] = str(company_data['_id'])
+
+            return Company.model_validate(company_data)
         except Exception as e:
             Logger.error(f'Error getting company: {str(e)}')
             return None
 
-    async def delete_company(self, company_id: str):
+    @classmethod
+    async def delete_company(cls, company_id: str):
         try:
-            result = await MongoDB.db[self.collection_name].delete_one(
-                {'_id': ObjectId(company_id)}
+            result = await MongoDB.db[cls.collection_name].delete_one(
+                {'id': company_id}
             )
             return result.deleted_count > 0
         except Exception as e:

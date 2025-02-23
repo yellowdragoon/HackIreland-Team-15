@@ -19,9 +19,11 @@ async def create_company(company: Company):
 async def get_company(company_id: str):
     try:
         company = await CompanyService.get_company(company_id)
+        if not company:
+            raise HTTPException(status_code=404, detail=f"Company {company_id} not found")
         return company
     except Exception as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.put("/{company_id}")
 async def update_company(company_id: str, company: Company):
