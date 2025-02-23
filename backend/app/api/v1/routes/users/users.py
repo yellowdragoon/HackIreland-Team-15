@@ -66,3 +66,19 @@ async def delete_user(passport_string: str):
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/{passport_string}/ref-score")
+async def get_user_ref_score(passport_string: str):
+    """Get a user's reference score."""
+    try:
+        user = await UserService.get_user(passport_string)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        ref_score = await UserService.set_user_risk_score(str(user.id))
+        if ref_score is None:
+            raise HTTPException(status_code=500, detail="Failed to calculate reference score")
+            
+        return {"ref_score": ref_score}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

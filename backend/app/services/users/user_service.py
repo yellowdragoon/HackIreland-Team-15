@@ -3,7 +3,7 @@ from app.utils.logger.logger import Logger
 from app.core.db.db import MongoDB
 from app.services.users.info.ipcheck import IPCheckResult
 from app.services.users.info.user_info import UserInfoService
-from app.services.users.breach_event_service import BreachEventsService
+from app.services.users.events.breach_event_service import BreachEventService
 from app.services.users.scoring.scoring import calculate_risk_score
 from typing import Optional, List
 from bson import ObjectId
@@ -142,17 +142,37 @@ class UserService:
         except Exception as e:
             Logger.error(f'Error getting user with risk score: {str(e)}')
             return None
-        
-    @classmethod 
-    async def set_user_risk_score(cls,user_id: str):
-        user = await cls.get_user_by_id(user_id)
-        if not user: 
-            return None 
-        
-        breach_events = await BreachEventsService.get_breach_events_for_user(user_id)
-        num_devices = await UserInfoService.get_user_devices(user_id)
-        new_score = calculate_risk_score(user_id,breach_events,num_devices)
-        user.risk_score = new_score 
-        await user.save()
 
-        return new_score 
+    @classmethod
+    async def get_user_by_id(cls, user_id: str) -> Optional[User]:
+        try:
+            user_data = await MongoDB.db[cls.collection_name].find_one({'_id': ObjectId(user_id)})
+            if not user_data:
+                return None
+            user_data['_id'] = str(user_data['_id'])
+            return User.model_validate(user_data)
+        except Exception as e:
+            Logger.error(f'Error getting user by ID: {str(e)}')
+            return None
+
+    @classmethod
+    async def set_user_risk_score(cls, user_id: str) -> Optional[float]:
+        try:
+            user = await cls.get_user_by_id(user_id)
+            if not user:
+                return None
+
+            breach_events = await BreachEventService.get_user_breach_events(user_id)
+            num_devices = await UserInfoService.get_user_devices(user_id)
+            
+            if breach_events is None or num_devices is None:
+                return None
+
+            new_score = calculate_risk_score(user_id, breach_events, len(num_devices))
+            user.ref_score = new_score
+            await cls.update_user(user.passport_string, user)
+
+            return new_score
+        except Exception as e:
+            Logger.error(f"Error setting user risk score: {str(e)}")
+            return None
