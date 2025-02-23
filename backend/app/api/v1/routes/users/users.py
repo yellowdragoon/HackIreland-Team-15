@@ -14,6 +14,24 @@ router = APIRouter(
     }
 )
 
+@router.post("/test-data", response_model=ApiResponse[List[User]])
+async def create_test_data():
+    test_users = [
+        User(passport_string="PS001", name="John Doe"),
+        User(passport_string="PS002", name="Jane Smith"),
+        User(passport_string="PS003", name="Bob Wilson"),
+        User(passport_string="PS004", name="Alice Brown"),
+        User(passport_string="PS005", name="Charlie Davis")
+    ]
+    
+    created_users = []
+    for user in test_users:
+        created_user = await UserService.create_user(user, "127.0.0.1")
+        if created_user:
+            created_users.append(created_user)
+    
+    return ApiResponse(data=created_users, message="Test users created successfully")
+
 @router.get("/", response_model=ApiResponse[List[User]])
 async def list_users():
     users = await UserService.list_users()

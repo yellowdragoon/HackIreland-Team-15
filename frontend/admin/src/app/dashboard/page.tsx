@@ -16,6 +16,9 @@ export default function DashboardPage() {
   const [selectedBreach, setSelectedBreach] = useState(null);
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [resolvingBreach, setResolvingBreach] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [userDetails, setUserDetails] = useState(null);
 
   useEffect(() => {
     loadDashboard();
@@ -23,6 +26,7 @@ export default function DashboardPage() {
 
   const loadDashboard = async () => {
     try {
+      setLoading(true);
       // Get unresolved breaches
       const unresolvedRes = await api.get('/breach-events/unresolved');
       setUnresolved(unresolvedRes.data || []);
@@ -31,13 +35,41 @@ export default function DashboardPage() {
       const recentRes = await api.get('/breach-events');
       setRecentBreaches(recentRes.data || []);
 
-      // Calculate stats
-      setStats({
-        totalBreaches: recentRes.data?.length || 0,
-        unresolvedBreaches: unresolvedRes.data?.length || 0,
-        highRiskUsers: recentRes.data?.filter(b => b.effect_score > 70).length || 0
-      });
+      // Get users
+      const usersRes = await api.get('/users');
+      console.log('Users response:', usersRes); // Debug log
+      
+      if (usersRes?.data?.data) { // Note the nested .data access
+        // Fetch risk scores for each user
+        const usersWithScores = await Promise.all(
+          usersRes.data.data.map(async (user: any) => {
+            try {
+              const scoreRes = await api.get(`/users/score/${user.passport_string}`);
+              return {
+                ...user,
+                ref_score: scoreRes?.data?.data?.ref_score || user.ref_score || 0
+              };
+            } catch (e) {
+              console.error(`Failed to get score for user ${user.passport_string}:`, e);
+              return {
+                ...user,
+                ref_score: user.ref_score || 0
+              };
+            }
+          })
+        );
+        console.log('Users with scores:', usersWithScores); // Debug log
+        setUsers(usersWithScores);
+
+        // Update stats with high risk users
+        setStats({
+          totalBreaches: recentRes.data?.length || 0,
+          unresolvedBreaches: unresolvedRes.data?.length || 0,
+          highRiskUsers: usersWithScores.filter((u: any) => u.ref_score >= 70).length || 0
+        });
+      }
     } catch (err: any) {
+      console.error('Dashboard loading error:', err); // Debug log
       setError(err.message || 'Failed to load dashboard');
     } finally {
       setLoading(false);
@@ -45,6 +77,10 @@ export default function DashboardPage() {
   };
 
   const resolveBreachEvent = async (eventId: string) => {
+    if (!eventId) {
+      setError('Invalid breach ID');
+      return;
+    }
     try {
       setResolvingBreach(true);
       await api.post(`/breach-events/${eventId}/resolve`, {
@@ -170,6 +206,54 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* User Risk Analysis */}
+        <div className="bg-white rounded-lg shadow mb-8">
+          <div className="p-6">
+            <h2 className="text-xl font-bold mb-4">User Risk Analysis</h2>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead>
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Risk Score</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {users.map((user: any) => (
+                    <tr key={user.passport_string} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap font-medium">{user.passport_string}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{user.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`font-semibold ${getSeverityColor(user.ref_score)}`}>
+                          {user.ref_score}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          onClick={async () => {
+                            try {
+                              const riskData = await api.get(`/users/risk/${user.passport_string}`);
+                              setUserDetails(riskData);
+                              setSelectedUser(user);
+                            } catch (err) {
+                              setError('Failed to load user details');
+                            }
+                          }}
+                          className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                        >
+                          View Details
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
         {/* Recent Activity */}
         <div className="bg-white rounded-lg shadow">
           <div className="p-6">
@@ -219,6 +303,68 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* User Details Modal */}
+        {selectedUser && userDetails && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg max-w-2xl w-full p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold">User Details</h3>
+                <button
+                  onClick={() => {
+                    setSelectedUser(null);
+                    setUserDetails(null);
+                  }}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div>
+                  <h4 className="font-medium mb-2">User Information</h4>
+                  <p className="text-sm text-gray-600">ID: {selectedUser.passport_string}</p>
+                  <p className="text-sm text-gray-600">Name: {selectedUser.name}</p>
+                  <p className="text-sm text-gray-600">
+                    Risk Score: <span className={`font-semibold ${getSeverityColor(selectedUser.ref_score)}`}>
+                      {selectedUser.ref_score}
+                    </span>
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-medium mb-2">Risk Analysis</h4>
+                  <p className="text-sm text-gray-600">Current Score: {userDetails.risk_score}</p>
+                  <p className="text-sm text-gray-600">Total Breaches: {userDetails.user?.total_breaches || 0}</p>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <h4 className="font-medium mb-2">Device History</h4>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  {userDetails.devices?.length > 0 ? (
+                    <div className="grid grid-cols-3 gap-4">
+                      {userDetails.devices.map((device: any, index: number) => (
+                        <div key={index} className="bg-white p-3 rounded shadow-sm">
+                          <p className="text-sm font-medium">Device {index + 1}</p>
+                          <p className="text-xs text-gray-600">IP: {device.ip_address}</p>
+                          <p className="text-xs text-gray-600">Last Used: {formatDate(device.last_used)}</p>
+                          <p className="text-xs text-gray-600">Risk Level: 
+                            <span className={`font-semibold ${getSeverityColor(device.risk_score)}`}>
+                              {device.risk_score}
+                            </span>
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">No devices found</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Resolution Modal */}
         {selectedBreach && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
@@ -250,7 +396,7 @@ export default function DashboardPage() {
                   Cancel
                 </button>
                 <button
-                  onClick={() => resolveBreachEvent(selectedBreach._id)}
+                  onClick={() => resolveBreachEvent(selectedBreach?.id || selectedBreach?._id)}
                   disabled={resolvingBreach}
                   className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-blue-300 transition-colors"
                 >
