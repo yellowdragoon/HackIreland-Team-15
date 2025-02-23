@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Request
 from app.services.users.user_service import UserService
 from app.models.user.user import User
+from app.models.response import ApiResponse
 from typing import List
 from app.utils.logger.logger import Logger
 
@@ -13,21 +14,22 @@ router = APIRouter(
     }
 )
 
-@router.get("/", response_model=List[User])
+@router.get("/", response_model=ApiResponse[List[User]])
 async def list_users():
-    return await UserService.list_users()
+    users = await UserService.list_users()
+    return ApiResponse(data=users, message="Users retrieved successfully")
 
-@router.post("/")
+@router.post("/", response_model=ApiResponse[User])
 async def create_user(user: User, request: Request):
     try:
         ip_address = request.client.host
         created_user = await UserService.create_user(user, ip_address)
-        return created_user
+        return ApiResponse(data=created_user, message="User created successfully")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/score/{passport_string}",
-         response_model=dict,
+         response_model=ApiResponse[dict],
          summary="Get user's reference score",
          description="Get the reference score for a user based on their breach events and device history.")
 async def get_user_ref_score(passport_string: str):

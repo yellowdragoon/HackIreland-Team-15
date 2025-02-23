@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { api, Company, BreachType } from '@/lib/api';
-import { BreachTypeEnum } from '@/lib/api';
+import { api, Company, BreachType, BreachTypeEnum } from '@/lib/api';
 
 const breachTypes: BreachTypeEnum[] = [
   'VIOLATING_TERMS',
@@ -176,17 +175,23 @@ export default function OnboardingPage() {
                   <label className="block text-sm font-medium text-gray-700">
                     Breach Type
                   </label>
-                  <input
-                    type="text"
+                  <select
                     required
                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
                     value={policy.breach_type}
                     onChange={(e) => {
                       const newPolicies = [...breachPolicies];
-                      newPolicies[index].breach_type = e.target.value;
+                      newPolicies[index].breach_type = e.target.value as BreachTypeEnum;
                       setBreachPolicies(newPolicies);
                     }}
-                  />
+                  >
+                    <option value="VIOLATING_TERMS">Violating Terms</option>
+                    <option value="FRAUD">Fraud</option>
+                    <option value="DEFAULT">Default</option>
+                    <option value="SUSPICIOUS_ACTIVITY">Suspicious Activity</option>
+                    <option value="ILLEGAL_ACTIVITY">Illegal Activity</option>
+                    <option value="DATA_LEAK">Data Leak</option>
+                  </select>
                 </div>
                 <div className="mt-4">
                   <label className="block text-sm font-medium text-gray-700">
@@ -205,25 +210,6 @@ export default function OnboardingPage() {
                 </div>
                 <div className="mt-4">
                   <label className="block text-sm font-medium text-gray-700">
-                    Breach Type
-                  </label>
-                  <select
-                    required
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-                    value={policy.breach_type}
-                    onChange={(e) => {
-                      const newPolicies = [...breachPolicies];
-                      newPolicies[index].breach_type = e.target.value as BreachTypeEnum;
-                      setBreachPolicies(newPolicies);
-                    }}
-                  >
-                    {breachTypes.map(type => (
-                      <option key={type} value={type}>{type.replace(/_/g, ' ')}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700">
                     Effect Score (0-100)
                   </label>
                   <input
@@ -232,7 +218,7 @@ export default function OnboardingPage() {
                     max="100"
                     required
                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-                    value={policy.impact_score}
+                    value={policy.effect_score}
                     onChange={(e) => {
                       const newPolicies = [...breachPolicies];
                       newPolicies[index].effect_score = parseInt(e.target.value);
