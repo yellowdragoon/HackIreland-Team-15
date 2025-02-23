@@ -19,6 +19,13 @@ export default function DashboardPage() {
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [userDetails, setUserDetails] = useState(null);
+  const [showCreateEvent, setShowCreateEvent] = useState(false);
+  const [newEvent, setNewEvent] = useState({
+    user_id: '',
+    breach_type: 'SUSPICIOUS_ACTIVITY',
+    effect_score: 50,
+    description: ''
+  });
 
   useEffect(() => {
     loadDashboard();
@@ -206,6 +213,16 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Create Event Button */}
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={() => setShowCreateEvent(true)}
+            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+          >
+            Create Manual Event
+          </button>
+        </div>
+
         {/* User Risk Analysis */}
         <div className="bg-white rounded-lg shadow mb-8">
           <div className="p-6">
@@ -360,6 +377,125 @@ export default function DashboardPage() {
                     <p className="text-sm text-gray-500">No devices found</p>
                   )}
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Create Event Modal */}
+        {showCreateEvent && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg max-w-lg w-full p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold">Create Manual Event</h3>
+                <button
+                  onClick={() => setShowCreateEvent(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    User ID
+                  </label>
+                  <select
+                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={newEvent.user_id}
+                    onChange={(e) => setNewEvent({...newEvent, user_id: e.target.value})}
+                  >
+                    <option value="">Select a user</option>
+                    {users.map((user: any) => (
+                      <option key={user.passport_string} value={user.passport_string}>
+                        {user.name} ({user.passport_string})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Breach Type
+                  </label>
+                  <select
+                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={newEvent.breach_type}
+                    onChange={(e) => setNewEvent({...newEvent, breach_type: e.target.value})}
+                  >
+                    <option value="SUSPICIOUS_ACTIVITY">Suspicious Activity</option>
+                    <option value="FRAUD">Fraud</option>
+                    <option value="VIOLATING_TERMS">Terms Violation</option>
+                    <option value="ILLEGAL_ACTIVITY">Illegal Activity</option>
+                    <option value="DATA_LEAK">Data Leak</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Effect Score (0-100)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={newEvent.effect_score}
+                    onChange={(e) => setNewEvent({...newEvent, effect_score: parseInt(e.target.value) || 0})}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows={4}
+                    value={newEvent.description}
+                    onChange={(e) => setNewEvent({...newEvent, description: e.target.value})}
+                    placeholder="Enter event details..."
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => {
+                    setShowCreateEvent(false);
+                    setNewEvent({
+                      user_id: '',
+                      breach_type: 'SUSPICIOUS_ACTIVITY',
+                      effect_score: 50,
+                      description: ''
+                    });
+                  }}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      await api.post('/breach-events/manual', newEvent);
+                      setShowCreateEvent(false);
+                      setNewEvent({
+                        user_id: '',
+                        breach_type: 'SUSPICIOUS_ACTIVITY',
+                        effect_score: 50,
+                        description: ''
+                      });
+                      loadDashboard();
+                    } catch (err) {
+                      setError('Failed to create event');
+                    }
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                  disabled={!newEvent.user_id || !newEvent.description}
+                >
+                  Create Event
+                </button>
               </div>
             </div>
           </div>

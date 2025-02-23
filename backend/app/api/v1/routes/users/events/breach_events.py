@@ -28,6 +28,28 @@ async def get_all_breach_events():
         Logger.error(f"Error getting all events: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
+@router.post("/manual",
+          response_model=dict,
+          summary="Manually create a new breach event",
+          description="Create a new breach event manually from the dashboard")
+async def create_manual_breach_event(event: dict):
+    try:
+        Logger.info(f"Creating manual breach event: {event}")
+        # Add timestamp if not provided
+        if 'timestamp' not in event:
+            event['timestamp'] = datetime.utcnow()
+        # Add manual flag
+        event['manual_entry'] = True
+        
+        created_event = await BreachEventService.create_breach_event(event)
+        if not created_event:
+            raise HTTPException(status_code=500, detail="Failed to create breach event")
+            
+        return {"status": "success", "data": created_event}
+    except Exception as e:
+        Logger.error(f"Error creating manual breach event: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.post("/",
           response_model=dict,
           summary="Create a new breach event",
