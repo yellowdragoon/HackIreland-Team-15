@@ -49,7 +49,7 @@ export default function Home() {
             <span className="text-4xl sm:text-6xl">from High-Risk Users</span>
           </h1>
           <p className="mt-6 text-xl text-slate-300 max-w-3xl mx-auto">
-            Identify and stop bad actors before they cause damage. Our AI-powered platform helps you make informed decisions about who to trust.
+            Identify and stop bad actors before they cause damage. Our data-driven platform helps you make informed decisions about who to trust.
           </p>
           <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
             <motion.button
@@ -92,8 +92,8 @@ export default function Home() {
               transition={{ delay: 0.1 }}
               className="p-8 rounded-2xl bg-slate-800/50 border border-slate-700"
             >
-              <div className="text-4xl font-bold text-blue-400">5M+</div>
-              <div className="mt-2 text-slate-300">Users Screened</div>
+              <div className="text-4xl font-bold text-blue-400">10+</div>
+              <div className="mt-2 text-slate-300">Data Points</div>
             </motion.div>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
