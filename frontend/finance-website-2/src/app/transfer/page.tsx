@@ -71,7 +71,7 @@ const TransferPage = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({'user_id': userId, 'company_id': 'Stripe', 'breach_type': 'FRAUD', 'description': 'Credit fraud', 'severity': 'CRITICAL', 'status': 'OPEN'}),
+        body: JSON.stringify({'user_id': userId, 'company_id': 'Stripe', 'breach_type': 'FRAUD', 'description': 'Credit fraud', 'severity': 'CRITICAL', 'status': 'OPEN', 'effect_score': 30}),
       });
 
       if (!response.ok) {
